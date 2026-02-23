@@ -1,6 +1,5 @@
 "use client";
 
-import { useRef } from "react";
 import { Quote, TemplateType } from "@/types";
 import MinimalistCard from "./templates/MinimalistCard";
 import SplitCard from "./templates/SplitCard";

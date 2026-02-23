@@ -7,7 +7,7 @@ import StatsCards from "@/components/dashboard/StatsCards";
 import QuoteList from "@/components/dashboard/QuoteList";
 import ProfileSettings from "@/components/ProfileSettings";
 import Link from "next/link";
-import { CalendarDays, Settings, BookOpen, Loader2 } from "lucide-react";
+import { CalendarDays, Settings, BookOpen, Loader2, Newspaper, LayoutGrid } from "lucide-react";
 
 export default function Dashboard() {
   const {
@@ -51,6 +51,21 @@ export default function Dashboard() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <Link
+              href="/ai-news"
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors border border-emerald-200/60"
+            >
+              <Newspaper className="w-4 h-4" />
+              AI News
+              <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+            </Link>
+            <Link
+              href="/content-hub"
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors border border-indigo-200/60"
+            >
+              <LayoutGrid className="w-4 h-4" />
+              Content Hub
+            </Link>
             <Link
               href="/calendar"
               className="flex items-center gap-2 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 rounded-lg transition-colors"

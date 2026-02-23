@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { UserSettings } from "@/types";
 
 const SETTINGS_KEY = "linkedin_user_settings";
@@ -10,21 +10,23 @@ const defaultSettings: UserSettings = {
   profile_image_url: "",
   display_name: "",
   linkedin_handle: "",
+  instagram_personal_handle: "meshaid",
+  instagram_ai_handle: "ai360withshaid",
 };
 
 export function useUserSettings() {
-  const [settings, setSettings] = useState<UserSettings>(defaultSettings);
-
-  useEffect(() => {
+  const [settings, setSettings] = useState<UserSettings>(() => {
+    if (typeof window === "undefined") return defaultSettings;
     const stored = localStorage.getItem(SETTINGS_KEY);
     if (stored) {
       try {
-        setSettings(JSON.parse(stored));
+        return JSON.parse(stored);
       } catch {
-        // keep defaults
+        return defaultSettings;
       }
     }
-  }, []);
+    return defaultSettings;
+  });
 
   const updateSettings = useCallback((updates: Partial<UserSettings>) => {
     setSettings((prev) => {

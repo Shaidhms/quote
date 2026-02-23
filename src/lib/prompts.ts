@@ -1,4 +1,4 @@
-import { Quote, ImageStyle, CaptionStyle } from "@/types";
+import { Quote, AINewsArticle, ImageStyle, CaptionStyle } from "@/types";
 
 const SCENE_MAP: Record<string, string> = {
   Productivity: "modern minimalist workspace with warm golden lighting, notebook and coffee on desk",
@@ -99,6 +99,22 @@ export function generateCaptionSystemPrompt(style: CaptionStyle): string {
     story: `You are a LinkedIn storytelling expert. Write a first-person narrative LinkedIn post (150-250 words) that uses the given quote as the anchor. Start with a personal anecdote or scenario that leads into the quote. Make it feel authentic, relatable, and end with a takeaway. Use line breaks between paragraphs for readability. Include 5-8 relevant hashtags at the end.`,
     motivational: `You are a motivational LinkedIn writer. Write a short, punchy LinkedIn post (80-120 words) that is energizing and direct. Use the quote as the centerpiece. Short sentences. Bold claims. End with a call-to-action. Include 5-8 relevant hashtags at the end.`,
     question: `You are a thought-leadership LinkedIn writer. Open the post with a provocative, thought-provoking question inspired by the quote. Then present the quote with context. Close by asking the audience to reflect and share their perspective. Keep it to 100-150 words. Include 5-8 relevant hashtags at the end.`,
+    first_person: `You are a top LinkedIn thought-leadership ghostwriter. Write a LinkedIn post (200-300 words) in a punchy, narrative storytelling style.
+
+STRICT FORMAT RULES:
+- Each line should be 1 sentence MAX. Use a blank line between every line for breathing room.
+- Open with a bold, contrarian or attention-grabbing one-liner that hooks the reader.
+- Then add "But what if..." or a reframe that challenges conventional thinking.
+- Introduce the quote/concept with **bold markdown** on key terms.
+- Build a narrative arc: problem → insight → shift in thinking.
+- Use bullet points (• or –) for lists of 3-5 items when listing benefits, takeaways, or action items.
+- Use bold (**text**) to emphasize key phrases — not entire sentences, just 2-3 words.
+- End with a forward-looking, inspiring 2-3 line closing that motivates action.
+- Close with exactly 6-8 hashtags on the last line, no more.
+
+TONE: Professional, reflective, confident. Like a senior leader sharing hard-won wisdom. NOT motivational-poster generic. NOT corporate jargon. Write like a real person who thinks deeply.
+
+DO NOT: Use emojis. Use exclamation marks excessively. Write long paragraphs. Use filler phrases like "Let me share" or "Here's the thing."`,
   };
   return prompts[style];
 }
@@ -112,6 +128,89 @@ Author: ${quote.author}
 Book: ${quote.book_name}
 Category: ${quote.category}
 Posted by: ${displayName}
+
+Write the LinkedIn post now.`;
+}
+
+// --- AI News Prompts ---
+
+export function generateNewsImagePrompt(
+  article: AINewsArticle,
+  displayName: string,
+  style: ImageStyle
+): string {
+  const styleInstruction = STYLE_INSTRUCTIONS[style];
+
+  return `Create an image ${styleInstruction}
+
+Scene: A professional AI researcher or tech executive (${displayName || "a professional person"}) reacting to breaking news about artificial intelligence.
+
+Context: The news headline is: "${article.title}" from ${article.source}.
+
+The visual should convey innovation, technology, and forward-thinking.
+Think data visualizations, neural network aesthetics, futuristic interfaces, or a person reading/presenting cutting-edge AI news.
+The mood should be intellectually exciting and authoritative.
+Square 1:1 aspect ratio. High quality. LinkedIn professional context.`;
+}
+
+export function generateNewsLinkedInCaption(article: AINewsArticle): string {
+  const hashtags = [
+    "#AI",
+    "#ArtificialIntelligence",
+    "#MachineLearning",
+    "#TechNews",
+    "#Innovation",
+    "#FutureOfWork",
+    "#LinkedIn",
+  ];
+
+  return `Breaking in AI: ${article.title}
+
+${article.description || "This development marks another milestone in the rapidly evolving AI landscape."}
+
+Via ${article.source}
+
+What are your thoughts on this development? Drop your perspective in the comments.
+
+${hashtags.join(" ")}`;
+}
+
+export function generateNewsCaptionSystemPrompt(style: CaptionStyle): string {
+  const prompts: Record<CaptionStyle, string> = {
+    professional: `You are a LinkedIn thought-leadership writer specializing in AI and technology. Write a professional LinkedIn post (120-180 words) commenting on this AI news. Position the author as an informed industry expert. Provide context, an observation, and a forward-looking insight. Include 5-8 relevant hashtags at the end.`,
+    story: `You are a LinkedIn storytelling expert who covers AI and tech. Write a first-person narrative post (180-250 words) that connects this AI news to a personal experience or broader professional journey. Make it feel authentic. Include 5-8 relevant hashtags at the end.`,
+    motivational: `You are a motivational LinkedIn writer focused on the future of AI. Write a punchy, energizing post (80-120 words) inspired by this AI news that motivates professionals to stay ahead of the curve. Short sentences. Optimistic tone. Include 5-8 relevant hashtags at the end.`,
+    question: `You are a thought-leadership LinkedIn writer. Open with a provocative question that this AI news raises. Present the news briefly with context. Close by inviting the audience to share their perspective. Keep it to 100-150 words. Include 5-8 relevant hashtags at the end.`,
+    first_person: `You are a top LinkedIn thought-leadership ghostwriter specializing in AI and technology. Write a LinkedIn post (200-300 words) in a punchy, narrative storytelling style about this AI news.
+
+STRICT FORMAT RULES:
+- Each line should be 1 sentence MAX. Use a blank line between every line for breathing room.
+- Open with a bold, contrarian or attention-grabbing one-liner that hooks the reader.
+- Then add "But what if..." or a reframe that challenges conventional thinking.
+- Introduce the news/concept with **bold markdown** on key terms (product names, companies, concepts).
+- Build a narrative arc: what everyone assumes → the real insight → why it matters → what to do about it.
+- Use bullet points (• or –) for lists of 3-5 items when listing implications, takeaways, or action items.
+- Use bold (**text**) to emphasize key phrases — not entire sentences, just 2-3 words.
+- End with a forward-looking, inspiring 2-3 line closing that motivates professionals to act.
+- Close with exactly 6-8 hashtags on the last line, no more.
+
+TONE: Professional, reflective, confident. Like a senior tech leader sharing their perspective. NOT motivational-poster generic. NOT corporate jargon. Write like a real person who thinks deeply about where AI is heading.
+
+DO NOT: Use emojis. Use exclamation marks excessively. Write long paragraphs. Use filler phrases like "Let me share" or "Here's the thing."`,
+  };
+  return prompts[style];
+}
+
+export function generateNewsCaptionUserPrompt(
+  article: AINewsArticle,
+  displayName: string
+): string {
+  return `News Article:
+Title: ${article.title}
+Source: ${article.source}
+Summary: ${article.description}
+Published: ${new Date(article.publishedAt).toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+Posted by: ${displayName || "an AI professional"}
 
 Write the LinkedIn post now.`;
 }

@@ -11,7 +11,7 @@ import LinkedInCaption from "@/components/quote-detail/LinkedInCaption";
 import PostedToggle from "@/components/quote-detail/PostedToggle";
 import ProfileSettings from "@/components/ProfileSettings";
 import Link from "next/link";
-import { ArrowLeft, BookOpen, Settings, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, Settings, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 import { TemplateType } from "@/types";
 import { format, parseISO } from "date-fns";
 

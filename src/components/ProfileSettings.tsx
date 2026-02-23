@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { UserSettings } from "@/types";
 import { User, X, Camera } from "lucide-react";
 

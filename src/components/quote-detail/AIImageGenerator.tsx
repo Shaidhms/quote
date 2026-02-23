@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { Quote, ImageStyle } from "@/types";
 import { generateImagePrompt } from "@/lib/prompts";
 import {
@@ -41,22 +41,20 @@ export default function AIImageGenerator({
   );
   const [isEditing, setIsEditing] = useState(false);
   const [copied, setCopied] = useState(false);
-  const prevQuoteTextRef = useRef(quote.quote_text);
+  const [prevQuoteText, setPrevQuoteText] = useState(quote.quote_text);
 
   // Re-generate prompt when quote text changes (e.g. alternate quote applied)
-  useEffect(() => {
-    if (quote.quote_text !== prevQuoteTextRef.current) {
-      prevQuoteTextRef.current = quote.quote_text;
-      setPrompt(
-        generateImagePrompt(
-          quote,
-          displayName || "a professional person",
-          style
-        )
-      );
-      setCopied(false);
-    }
-  }, [quote, displayName, style]);
+  if (quote.quote_text !== prevQuoteText) {
+    setPrevQuoteText(quote.quote_text);
+    setPrompt(
+      generateImagePrompt(
+        quote,
+        displayName || "a professional person",
+        style
+      )
+    );
+    setCopied(false);
+  }
 
   const handleStyleChange = (newStyle: ImageStyle) => {
     setStyle(newStyle);

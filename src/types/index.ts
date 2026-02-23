@@ -16,6 +16,8 @@ export interface UserSettings {
   profile_image_url: string;
   display_name: string;
   linkedin_handle: string;
+  instagram_personal_handle: string;
+  instagram_ai_handle: string;
 }
 
 export type FilterType = "all" | "today" | "posted" | "not_posted";
@@ -33,7 +35,8 @@ export type CaptionStyle =
   | "professional"
   | "story"
   | "motivational"
-  | "question";
+  | "question"
+  | "first_person";
 
 export interface GenerateImageRequest {
   prompt: string;
@@ -55,4 +58,81 @@ export interface GenerateCaptionRequest {
 export interface GenerateCaptionResponse {
   caption: string;
   error?: string;
+}
+
+// AI News
+export interface AINewsArticle {
+  id: string;
+  title: string;
+  description: string;
+  url: string;
+  source: string;
+  publishedAt: string;
+}
+
+export interface FetchAINewsResponse {
+  articles: AINewsArticle[];
+  fetchedAt: string;
+  error?: string;
+}
+
+export interface GenerateNewsCaptionRequest {
+  article: AINewsArticle;
+  style: CaptionStyle;
+  displayName: string;
+}
+
+// News Post Queue
+export type NewsPostStatus = "queued" | "posted" | "declined";
+
+export interface NewsPostDecision {
+  articleId: string;
+  article: AINewsArticle;
+  status: NewsPostStatus;
+  decidedAt: string;
+  updatedAt: string;
+}
+
+export type NewsQueueFilter = "all" | "queued" | "posted" | "declined";
+
+// Content Hub
+export type Platform = "linkedin" | "instagram";
+export type InstagramHandle = "meshaid" | "ai360withshaid";
+export type PostTarget = "linkedin" | "instagram_meshaid" | "instagram_ai360withshaid";
+export type ContentPostStatus = "draft" | "scheduled" | "posted";
+
+export interface ContentAttachment {
+  id: string;
+  type: "image" | "pdf";
+  dataUrl: string;
+  name: string;
+}
+
+export interface ContentPost {
+  id: string;
+  caption: string;
+  images: string[];
+  attachments?: ContentAttachment[];
+  scheduledDate: string | null;
+  status: ContentPostStatus;
+  targets: PostTarget[];
+  /** @deprecated use targets instead */
+  platform?: Platform;
+  /** @deprecated use targets instead */
+  instagramHandle?: InstagramHandle;
+  source?: { type: "quote" | "news" | "custom"; title?: string };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type ContentHubFilter = "all" | "draft" | "scheduled" | "posted";
+
+// Ideas Braindump
+export interface ContentIdea {
+  id: string;
+  text: string;
+  tags?: string[];
+  platform?: Platform;
+  convertedToPostId?: string;
+  createdAt: string;
 }
