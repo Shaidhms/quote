@@ -1,5 +1,5 @@
-const MAX_WIDTH = 1200;
-const JPEG_QUALITY = 0.7;
+const MAX_WIDTH = 2048;
+const JPEG_QUALITY = 0.92;
 const MAX_IMAGES = 4;
 
 export function processImage(file: File): Promise<string> {
@@ -44,4 +44,21 @@ export async function processMultipleImages(
   const toProcess = Array.from(files).slice(0, slots);
   const processed = await Promise.all(toProcess.map(processImage));
   return [...existing, ...processed];
+}
+
+export function downloadImage(dataUrl: string, filename: string) {
+  const link = document.createElement("a");
+  link.href = dataUrl;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+export function downloadAllImages(images: string[], prefix: string = "post") {
+  images.forEach((img, i) => {
+    setTimeout(() => {
+      downloadImage(img, `${prefix}-image-${i + 1}.jpg`);
+    }, i * 300); // stagger downloads to avoid browser blocking
+  });
 }

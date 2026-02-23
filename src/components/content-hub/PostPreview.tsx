@@ -20,7 +20,9 @@ import {
   ChevronUp,
   Heart,
   Bookmark,
+  Download,
 } from "lucide-react";
+import { downloadImage, downloadAllImages } from "@/lib/imageUtils";
 
 interface PostPreviewProps {
   post: ContentPost;
@@ -138,7 +140,7 @@ export default function PostPreview({
 
                 {/* IG Image — square */}
                 {post.images.length > 0 ? (
-                  <div className="relative">
+                  <div className="relative group/img">
                     <div
                       className="w-full aspect-square bg-cover bg-center"
                       style={{ backgroundImage: `url(${post.images[0]})` }}
@@ -148,6 +150,13 @@ export default function PostPreview({
                         1/{post.images.length}
                       </div>
                     )}
+                    <button
+                      onClick={() => downloadImage(post.images[0], `post-image-1.jpg`)}
+                      className="absolute bottom-3 right-3 p-2 bg-black/60 hover:bg-black/80 text-white rounded-full opacity-100 sm:opacity-0 sm:group-hover/img:opacity-100 transition-opacity"
+                      title="Download image"
+                    >
+                      <Download className="w-4 h-4" />
+                    </button>
                   </div>
                 ) : (
                   <div className="w-full aspect-square bg-gradient-to-br from-purple-100 via-pink-50 to-orange-50 flex items-center justify-center">
@@ -283,44 +292,86 @@ export default function PostPreview({
                 {post.images.length > 0 && (
                   <div className="border-t border-slate-100">
                     {post.images.length === 1 ? (
-                      <div
-                        className="w-full aspect-[1.91/1] bg-cover bg-center"
-                        style={{ backgroundImage: `url(${post.images[0]})` }}
-                      />
+                      <div className="relative group/img">
+                        <div
+                          className="w-full aspect-[1.91/1] bg-cover bg-center"
+                          style={{ backgroundImage: `url(${post.images[0]})` }}
+                        />
+                        <button
+                          onClick={() => downloadImage(post.images[0], `post-image-1.jpg`)}
+                          className="absolute bottom-3 right-3 p-2 bg-black/60 hover:bg-black/80 text-white rounded-full opacity-100 sm:opacity-0 sm:group-hover/img:opacity-100 transition-opacity"
+                          title="Download image"
+                        >
+                          <Download className="w-4 h-4" />
+                        </button>
+                      </div>
                     ) : post.images.length === 2 ? (
                       <div className="flex gap-0.5">
                         {post.images.map((img, i) => (
-                          <div
-                            key={i}
-                            className="flex-1 aspect-square bg-cover bg-center"
-                            style={{ backgroundImage: `url(${img})` }}
-                          />
+                          <div key={i} className="relative flex-1 group/img">
+                            <div
+                              className="aspect-square bg-cover bg-center"
+                              style={{ backgroundImage: `url(${img})` }}
+                            />
+                            <button
+                              onClick={() => downloadImage(img, `post-image-${i + 1}.jpg`)}
+                              className="absolute bottom-2 right-2 p-1.5 bg-black/60 hover:bg-black/80 text-white rounded-full opacity-100 sm:opacity-0 sm:group-hover/img:opacity-100 transition-opacity"
+                              title="Download image"
+                            >
+                              <Download className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         ))}
                       </div>
                     ) : post.images.length === 3 ? (
                       <div className="flex gap-0.5">
-                        <div
-                          className="flex-1 aspect-square bg-cover bg-center"
-                          style={{ backgroundImage: `url(${post.images[0]})` }}
-                        />
+                        <div className="relative flex-1 group/img">
+                          <div
+                            className="aspect-square bg-cover bg-center"
+                            style={{ backgroundImage: `url(${post.images[0]})` }}
+                          />
+                          <button
+                            onClick={() => downloadImage(post.images[0], `post-image-1.jpg`)}
+                            className="absolute bottom-2 right-2 p-1.5 bg-black/60 hover:bg-black/80 text-white rounded-full opacity-100 sm:opacity-0 sm:group-hover/img:opacity-100 transition-opacity"
+                            title="Download image"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                         <div className="flex-1 flex flex-col gap-0.5">
                           {post.images.slice(1).map((img, i) => (
-                            <div
-                              key={i}
-                              className="flex-1 bg-cover bg-center"
-                              style={{ backgroundImage: `url(${img})` }}
-                            />
+                            <div key={i} className="relative flex-1 group/img">
+                              <div
+                                className="h-full bg-cover bg-center"
+                                style={{ backgroundImage: `url(${img})` }}
+                              />
+                              <button
+                                onClick={() => downloadImage(img, `post-image-${i + 2}.jpg`)}
+                                className="absolute bottom-2 right-2 p-1.5 bg-black/60 hover:bg-black/80 text-white rounded-full opacity-100 sm:opacity-0 sm:group-hover/img:opacity-100 transition-opacity"
+                                title="Download image"
+                              >
+                                <Download className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           ))}
                         </div>
                       </div>
                     ) : (
                       <div className="grid grid-cols-2 gap-0.5">
                         {post.images.map((img, i) => (
-                          <div
-                            key={i}
-                            className="aspect-square bg-cover bg-center"
-                            style={{ backgroundImage: `url(${img})` }}
-                          />
+                          <div key={i} className="relative group/img">
+                            <div
+                              className="aspect-square bg-cover bg-center"
+                              style={{ backgroundImage: `url(${img})` }}
+                            />
+                            <button
+                              onClick={() => downloadImage(img, `post-image-${i + 1}.jpg`)}
+                              className="absolute bottom-2 right-2 p-1.5 bg-black/60 hover:bg-black/80 text-white rounded-full opacity-100 sm:opacity-0 sm:group-hover/img:opacity-100 transition-opacity"
+                              title="Download image"
+                            >
+                              <Download className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         ))}
                       </div>
                     )}
@@ -417,6 +468,15 @@ export default function PostPreview({
                 </>
               )}
             </button>
+            {post.images.length > 0 && (
+              <button
+                onClick={() => downloadAllImages(post.images, "post")}
+                className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+              >
+                <Download className="w-3.5 h-3.5" />
+                {post.images.length === 1 ? "Download Image" : `Download ${post.images.length} Images`}
+              </button>
+            )}
             <button
               onClick={onEdit}
               className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
