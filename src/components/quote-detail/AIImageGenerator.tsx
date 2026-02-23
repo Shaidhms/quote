@@ -15,7 +15,6 @@ import {
 interface AIImageGeneratorProps {
   quote: Quote;
   displayName: string;
-  profileImageBase64: string;
 }
 
 const IMAGE_STYLES: { value: ImageStyle; label: string }[] = [
