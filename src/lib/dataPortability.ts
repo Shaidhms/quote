@@ -100,7 +100,7 @@ export async function syncToSupabase(
     try {
       const settings = JSON.parse(settingsRaw);
       const { error } = await sb.from("user_settings").upsert({
-        id: settings.id || "1",
+        id: settings.id && settings.id !== "1" ? settings.id : "00000000-0000-0000-0000-000000000001",
         profile_image_url: settings.profile_image_url ?? "",
         display_name: settings.display_name ?? "",
         linkedin_handle: settings.linkedin_handle ?? "",

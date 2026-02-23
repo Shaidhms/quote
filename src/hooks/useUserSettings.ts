@@ -6,8 +6,11 @@ import { UserSettings } from "@/types";
 
 const SETTINGS_KEY = "linkedin_user_settings";
 
+// Fixed UUID for the single-user settings row
+const SETTINGS_UUID = "00000000-0000-0000-0000-000000000001";
+
 const defaultSettings: UserSettings = {
-  id: "1",
+  id: SETTINGS_UUID,
   profile_image_url: "",
   display_name: "",
   linkedin_handle: "",
@@ -20,7 +23,10 @@ function loadFromStorage(): UserSettings {
   const stored = localStorage.getItem(SETTINGS_KEY);
   if (stored) {
     try {
-      return JSON.parse(stored);
+      const parsed = JSON.parse(stored);
+      // Migrate old id "1" to proper UUID
+      if (parsed.id === "1") parsed.id = SETTINGS_UUID;
+      return parsed;
     } catch {
       return defaultSettings;
     }
