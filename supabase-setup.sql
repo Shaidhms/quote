@@ -67,11 +67,23 @@ ALTER TABLE news_queue ENABLE ROW LEVEL SECURITY;
 ALTER TABLE content_posts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE content_ideas ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Allow all access to quotes" ON quotes FOR ALL USING (true);
-CREATE POLICY "Allow all access to user_settings" ON user_settings FOR ALL USING (true);
-CREATE POLICY "Allow all access to news_queue" ON news_queue FOR ALL USING (true);
-CREATE POLICY "Allow all access to content_posts" ON content_posts FOR ALL USING (true);
-CREATE POLICY "Allow all access to content_ideas" ON content_ideas FOR ALL USING (true);
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Allow all access to quotes') THEN
+    CREATE POLICY "Allow all access to quotes" ON quotes FOR ALL USING (true);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Allow all access to user_settings') THEN
+    CREATE POLICY "Allow all access to user_settings" ON user_settings FOR ALL USING (true);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Allow all access to news_queue') THEN
+    CREATE POLICY "Allow all access to news_queue" ON news_queue FOR ALL USING (true);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Allow all access to content_posts') THEN
+    CREATE POLICY "Allow all access to content_posts" ON content_posts FOR ALL USING (true);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Allow all access to content_ideas') THEN
+    CREATE POLICY "Allow all access to content_ideas" ON content_ideas FOR ALL USING (true);
+  END IF;
+END $$;
 
 -- Insert the 60 quotes (run this after creating the table)
 INSERT INTO quotes (day_number, quote_text, author, book_name, category, scheduled_date) VALUES

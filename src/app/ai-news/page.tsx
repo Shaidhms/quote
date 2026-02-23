@@ -46,7 +46,7 @@ export default function AINewsPage() {
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link
-              href="/"
+              href="/dashboard"
               className="p-2 hover:bg-slate-100 rounded-xl transition-colors"
             >
               <ArrowLeft className="w-5 h-5 text-slate-600" />

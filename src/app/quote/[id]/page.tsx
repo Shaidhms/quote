@@ -49,7 +49,7 @@ export default function QuoteDetailPage({
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 gap-4">
         <p className="text-slate-500">Quote not found</p>
-        <Link href="/" className="text-blue-600 hover:underline text-sm">
+        <Link href="/dashboard" className="text-blue-600 hover:underline text-sm">
           Back to Dashboard
         </Link>
       </div>
@@ -66,7 +66,7 @@ export default function QuoteDetailPage({
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link
-              href="/"
+              href="/dashboard"
               className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
             >
               <ArrowLeft className="w-5 h-5 text-slate-600" />
