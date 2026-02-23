@@ -22,12 +22,56 @@ CREATE TABLE IF NOT EXISTS user_settings (
   linkedin_handle TEXT DEFAULT ''
 );
 
+-- Add Instagram handle columns to user_settings
+ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS instagram_personal_handle TEXT DEFAULT 'meshaid';
+ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS instagram_ai_handle TEXT DEFAULT 'ai360withshaid';
+
+-- News queue table
+CREATE TABLE IF NOT EXISTS news_queue (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  article_id TEXT NOT NULL UNIQUE,
+  article JSONB NOT NULL,
+  status TEXT DEFAULT 'queued' CHECK (status IN ('queued','posted','declined')),
+  decided_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Content posts table
+CREATE TABLE IF NOT EXISTS content_posts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  caption TEXT DEFAULT '',
+  images TEXT[] DEFAULT '{}',
+  attachments JSONB DEFAULT '[]',
+  scheduled_date DATE,
+  status TEXT DEFAULT 'draft' CHECK (status IN ('draft','scheduled','posted')),
+  targets TEXT[] DEFAULT '{linkedin}',
+  source JSONB,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Content ideas table
+CREATE TABLE IF NOT EXISTS content_ideas (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  text TEXT NOT NULL,
+  tags TEXT[] DEFAULT '{}',
+  platform TEXT,
+  converted_to_post_id UUID,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- Enable Row Level Security (allow all for simplicity - single user app)
 ALTER TABLE quotes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE news_queue ENABLE ROW LEVEL SECURITY;
+ALTER TABLE content_posts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE content_ideas ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Allow all access to quotes" ON quotes FOR ALL USING (true);
 CREATE POLICY "Allow all access to user_settings" ON user_settings FOR ALL USING (true);
+CREATE POLICY "Allow all access to news_queue" ON news_queue FOR ALL USING (true);
+CREATE POLICY "Allow all access to content_posts" ON content_posts FOR ALL USING (true);
+CREATE POLICY "Allow all access to content_ideas" ON content_ideas FOR ALL USING (true);
 
 -- Insert the 60 quotes (run this after creating the table)
 INSERT INTO quotes (day_number, quote_text, author, book_name, category, scheduled_date) VALUES

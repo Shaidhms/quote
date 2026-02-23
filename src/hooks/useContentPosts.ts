@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
+import { getSupabase } from "@/lib/supabase";
 import {
   ContentPost,
   ContentPostStatus,
@@ -44,12 +45,69 @@ function saveToStorage(data: ContentPost[]) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 }
 
-export function useContentPosts() {
-  const [posts, setPosts] = useState<ContentPost[]>(loadFromStorage);
-  const [filter, setFilter] = useState<ContentHubFilter>("all");
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function fromRow(row: any): ContentPost {
+  return {
+    id: row.id,
+    caption: row.caption ?? "",
+    images: row.images ?? [],
+    attachments: row.attachments ?? [],
+    scheduledDate: row.scheduled_date ?? null,
+    status: row.status ?? "draft",
+    targets: row.targets ?? ["linkedin"],
+    source: row.source ?? undefined,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
 
-  // Cross-tab sync
+function toRow(p: ContentPost) {
+  return {
+    id: p.id,
+    caption: p.caption,
+    images: p.images,
+    attachments: p.attachments ?? [],
+    scheduled_date: p.scheduledDate,
+    status: p.status,
+    targets: p.targets,
+    source: p.source ?? null,
+    created_at: p.createdAt,
+    updated_at: p.updatedAt,
+  };
+}
+
+export function useContentPosts() {
+  const [posts, setPosts] = useState<ContentPost[]>([]);
+  const [filter, setFilter] = useState<ContentHubFilter>("all");
+  const [useSupabase, setUseSupabase] = useState(false);
+
   useEffect(() => {
+    async function init() {
+      const sb = getSupabase();
+      if (sb) {
+        try {
+          const { data, error } = await sb
+            .from("content_posts")
+            .select("*")
+            .order("created_at", { ascending: false });
+
+          if (!error && data) {
+            setPosts(data.map(fromRow));
+            setUseSupabase(true);
+            return;
+          }
+        } catch {
+          // fall through to localStorage
+        }
+      }
+      setPosts(loadFromStorage());
+    }
+    init();
+  }, []);
+
+  // Cross-tab sync (localStorage only)
+  useEffect(() => {
+    if (useSupabase) return;
     const handleVisibility = () => {
       if (document.visibilityState === "visible") {
         setPosts(loadFromStorage());
@@ -70,10 +128,10 @@ export function useContentPosts() {
       document.removeEventListener("visibilitychange", handleVisibility);
       window.removeEventListener("storage", handleStorage);
     };
-  }, []);
+  }, [useSupabase]);
 
-  const addPost = useCallback((post: Omit<ContentPost, "id" | "createdAt" | "updatedAt">) => {
-    setPosts((prev) => {
+  const addPost = useCallback(
+    async (post: Omit<ContentPost, "id" | "createdAt" | "updatedAt">) => {
       const now = new Date().toISOString();
       const newPost: ContentPost = {
         ...post,
@@ -81,48 +139,95 @@ export function useContentPosts() {
         createdAt: now,
         updatedAt: now,
       };
-      const updated = [newPost, ...prev];
-      saveToStorage(updated);
-      return updated;
-    });
-  }, []);
 
-  const updatePost = useCallback(
-    (id: string, changes: Partial<Omit<ContentPost, "id" | "createdAt">>) => {
       setPosts((prev) => {
-        const updated = prev.map((p) =>
-          p.id === id
-            ? { ...p, ...changes, updatedAt: new Date().toISOString() }
-            : p
-        );
-        saveToStorage(updated);
+        const updated = [newPost, ...prev];
+        if (!useSupabase) saveToStorage(updated);
         return updated;
       });
+
+      if (useSupabase) {
+        const sb = getSupabase();
+        if (sb) {
+          await sb.from("content_posts").insert(toRow(newPost));
+        }
+      }
     },
-    []
+    [useSupabase]
   );
 
-  const deletePost = useCallback((id: string) => {
-    setPosts((prev) => {
-      const updated = prev.filter((p) => p.id !== id);
-      saveToStorage(updated);
-      return updated;
-    });
-  }, []);
+  const updatePost = useCallback(
+    async (id: string, changes: Partial<Omit<ContentPost, "id" | "createdAt">>) => {
+      const now = new Date().toISOString();
 
-  const updateStatus = useCallback(
-    (id: string, status: ContentPostStatus) => {
       setPosts((prev) => {
         const updated = prev.map((p) =>
-          p.id === id
-            ? { ...p, status, updatedAt: new Date().toISOString() }
-            : p
+          p.id === id ? { ...p, ...changes, updatedAt: now } : p
         );
-        saveToStorage(updated);
+        if (!useSupabase) saveToStorage(updated);
         return updated;
       });
+
+      if (useSupabase) {
+        const sb = getSupabase();
+        if (sb) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const row: any = { updated_at: now };
+          if (changes.caption !== undefined) row.caption = changes.caption;
+          if (changes.images !== undefined) row.images = changes.images;
+          if (changes.attachments !== undefined) row.attachments = changes.attachments;
+          if (changes.scheduledDate !== undefined) row.scheduled_date = changes.scheduledDate;
+          if (changes.status !== undefined) row.status = changes.status;
+          if (changes.targets !== undefined) row.targets = changes.targets;
+          if (changes.source !== undefined) row.source = changes.source;
+          await sb.from("content_posts").update(row).eq("id", id);
+        }
+      }
     },
-    []
+    [useSupabase]
+  );
+
+  const deletePost = useCallback(
+    async (id: string) => {
+      setPosts((prev) => {
+        const updated = prev.filter((p) => p.id !== id);
+        if (!useSupabase) saveToStorage(updated);
+        return updated;
+      });
+
+      if (useSupabase) {
+        const sb = getSupabase();
+        if (sb) {
+          await sb.from("content_posts").delete().eq("id", id);
+        }
+      }
+    },
+    [useSupabase]
+  );
+
+  const updateStatus = useCallback(
+    async (id: string, status: ContentPostStatus) => {
+      const now = new Date().toISOString();
+
+      setPosts((prev) => {
+        const updated = prev.map((p) =>
+          p.id === id ? { ...p, status, updatedAt: now } : p
+        );
+        if (!useSupabase) saveToStorage(updated);
+        return updated;
+      });
+
+      if (useSupabase) {
+        const sb = getSupabase();
+        if (sb) {
+          await sb
+            .from("content_posts")
+            .update({ status, updated_at: now })
+            .eq("id", id);
+        }
+      }
+    },
+    [useSupabase]
   );
 
   const filteredPosts = posts.filter((p) => {

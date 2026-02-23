@@ -77,6 +77,127 @@ export function importAllData(json: string): ImportResult {
   }
 }
 
+export interface SyncProgress {
+  step: string;
+  done: boolean;
+  error?: string;
+}
+
+export async function syncToSupabase(
+  onProgress: (p: SyncProgress) => void
+): Promise<{ success: boolean; error?: string }> {
+  // Dynamic import to avoid bundling supabase in non-cloud paths
+  const { getSupabase } = await import("@/lib/supabase");
+  const sb = getSupabase();
+  if (!sb) {
+    return { success: false, error: "Supabase not configured" };
+  }
+
+  // 1. Sync user settings
+  onProgress({ step: "Syncing settings...", done: false });
+  const settingsRaw = localStorage.getItem("linkedin_user_settings");
+  if (settingsRaw) {
+    try {
+      const settings = JSON.parse(settingsRaw);
+      const { error } = await sb.from("user_settings").upsert({
+        id: settings.id || "1",
+        profile_image_url: settings.profile_image_url ?? "",
+        display_name: settings.display_name ?? "",
+        linkedin_handle: settings.linkedin_handle ?? "",
+        instagram_personal_handle: settings.instagram_personal_handle ?? "meshaid",
+        instagram_ai_handle: settings.instagram_ai_handle ?? "ai360withshaid",
+      });
+      if (error) return { success: false, error: `Settings: ${error.message}` };
+    } catch {
+      // skip
+    }
+  }
+
+  // 2. Sync news queue
+  onProgress({ step: "Syncing news queue...", done: false });
+  const newsRaw = localStorage.getItem("linkedin_news_queue");
+  if (newsRaw) {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const decisions = JSON.parse(newsRaw) as any[];
+      if (decisions.length > 0) {
+        const rows = decisions.map((d) => ({
+          article_id: d.articleId,
+          article: d.article,
+          status: d.status,
+          decided_at: d.decidedAt,
+          updated_at: d.updatedAt,
+        }));
+        const { error } = await sb
+          .from("news_queue")
+          .upsert(rows, { onConflict: "article_id" });
+        if (error) return { success: false, error: `News queue: ${error.message}` };
+      }
+    } catch {
+      // skip
+    }
+  }
+
+  // 3. Sync content posts
+  onProgress({ step: "Syncing content posts...", done: false });
+  const postsRaw = localStorage.getItem("linkedin_content_posts");
+  if (postsRaw) {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const posts = JSON.parse(postsRaw) as any[];
+      if (posts.length > 0) {
+        const rows = posts.map((p) => ({
+          id: p.id,
+          caption: p.caption ?? "",
+          images: p.images ?? [],
+          attachments: p.attachments ?? [],
+          scheduled_date: p.scheduledDate ?? null,
+          status: p.status ?? "draft",
+          targets: p.targets ?? ["linkedin"],
+          source: p.source ?? null,
+          created_at: p.createdAt,
+          updated_at: p.updatedAt,
+        }));
+        const { error } = await sb
+          .from("content_posts")
+          .upsert(rows, { onConflict: "id" });
+        if (error) return { success: false, error: `Content posts: ${error.message}` };
+      }
+    } catch {
+      // skip
+    }
+  }
+
+  // 4. Sync content ideas
+  onProgress({ step: "Syncing ideas...", done: false });
+  const ideasRaw = localStorage.getItem("linkedin_content_ideas");
+  if (ideasRaw) {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const ideas = JSON.parse(ideasRaw) as any[];
+      if (ideas.length > 0) {
+        const rows = ideas.map((i) => ({
+          id: i.id,
+          text: i.text,
+          tags: i.tags ?? [],
+          platform: i.platform ?? null,
+          converted_to_post_id: i.convertedToPostId ?? null,
+          created_at: i.createdAt,
+        }));
+        const { error } = await sb
+          .from("content_ideas")
+          .upsert(rows, { onConflict: "id" });
+        if (error) return { success: false, error: `Ideas: ${error.message}` };
+      }
+    } catch {
+      // skip
+    }
+  }
+
+  onProgress({ step: "Done! All data synced to cloud.", done: true });
+  return { success: true };
+}
+
 export function downloadAsFile(content: string, filename: string) {
   const blob = new Blob([content], { type: "application/json" });
   const url = URL.createObjectURL(blob);

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
+import { getSupabase } from "@/lib/supabase";
 import {
   NewsPostDecision,
   NewsPostStatus,
@@ -28,12 +29,59 @@ function saveToStorage(data: NewsPostDecision[]) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 }
 
-export function useNewsQueue() {
-  const [decisions, setDecisions] = useState<NewsPostDecision[]>(loadFromStorage);
-  const [filter, setFilter] = useState<NewsQueueFilter>("all");
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function fromRow(row: any): NewsPostDecision {
+  return {
+    articleId: row.article_id,
+    article: row.article,
+    status: row.status,
+    decidedAt: row.decided_at,
+    updatedAt: row.updated_at,
+  };
+}
 
-  // Cross-tab sync
+function toRow(d: NewsPostDecision) {
+  return {
+    article_id: d.articleId,
+    article: d.article,
+    status: d.status,
+    decided_at: d.decidedAt,
+    updated_at: d.updatedAt,
+  };
+}
+
+export function useNewsQueue() {
+  const [decisions, setDecisions] = useState<NewsPostDecision[]>([]);
+  const [filter, setFilter] = useState<NewsQueueFilter>("all");
+  const [useSupabase, setUseSupabase] = useState(false);
+
   useEffect(() => {
+    async function init() {
+      const sb = getSupabase();
+      if (sb) {
+        try {
+          const { data, error } = await sb
+            .from("news_queue")
+            .select("*")
+            .order("decided_at", { ascending: false });
+
+          if (!error && data) {
+            setDecisions(data.map(fromRow));
+            setUseSupabase(true);
+            return;
+          }
+        } catch {
+          // fall through to localStorage
+        }
+      }
+      setDecisions(loadFromStorage());
+    }
+    init();
+  }, []);
+
+  // Cross-tab sync (localStorage only)
+  useEffect(() => {
+    if (useSupabase) return;
     const handleVisibility = () => {
       if (document.visibilityState === "visible") {
         setDecisions(loadFromStorage());
@@ -54,12 +102,13 @@ export function useNewsQueue() {
       document.removeEventListener("visibilitychange", handleVisibility);
       window.removeEventListener("storage", handleStorage);
     };
-  }, []);
+  }, [useSupabase]);
 
   const setArticleStatus = useCallback(
-    (article: AINewsArticle, status: NewsPostStatus) => {
+    async (article: AINewsArticle, status: NewsPostStatus) => {
+      const now = new Date().toISOString();
+
       setDecisions((prev) => {
-        const now = new Date().toISOString();
         const existing = prev.find((d) => d.articleId === article.id);
         let updated: NewsPostDecision[];
         if (existing) {
@@ -78,20 +127,46 @@ export function useNewsQueue() {
             },
           ];
         }
-        saveToStorage(updated);
+        if (!useSupabase) saveToStorage(updated);
         return updated;
       });
+
+      if (useSupabase) {
+        const sb = getSupabase();
+        if (sb) {
+          await sb.from("news_queue").upsert(
+            toRow({
+              articleId: article.id,
+              article,
+              status,
+              decidedAt: now,
+              updatedAt: now,
+            }),
+            { onConflict: "article_id" }
+          );
+        }
+      }
     },
-    []
+    [useSupabase]
   );
 
-  const removeDecision = useCallback((articleId: string) => {
-    setDecisions((prev) => {
-      const updated = prev.filter((d) => d.articleId !== articleId);
-      saveToStorage(updated);
-      return updated;
-    });
-  }, []);
+  const removeDecision = useCallback(
+    async (articleId: string) => {
+      setDecisions((prev) => {
+        const updated = prev.filter((d) => d.articleId !== articleId);
+        if (!useSupabase) saveToStorage(updated);
+        return updated;
+      });
+
+      if (useSupabase) {
+        const sb = getSupabase();
+        if (sb) {
+          await sb.from("news_queue").delete().eq("article_id", articleId);
+        }
+      }
+    },
+    [useSupabase]
+  );
 
   const getStatus = useCallback(
     (articleId: string): NewsPostStatus | null => {

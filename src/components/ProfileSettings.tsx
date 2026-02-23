@@ -2,8 +2,8 @@
 
 import { useState, useRef } from "react";
 import { UserSettings } from "@/types";
-import { User, X, Camera, Download, Upload, CheckCircle2, AlertCircle } from "lucide-react";
-import { exportAllData, importAllData, downloadAsFile } from "@/lib/dataPortability";
+import { User, X, Camera, Download, Upload, CheckCircle2, AlertCircle, Cloud } from "lucide-react";
+import { exportAllData, importAllData, downloadAsFile, syncToSupabase } from "@/lib/dataPortability";
 
 interface ProfileSettingsProps {
   settings: UserSettings;
@@ -21,6 +21,8 @@ export default function ProfileSettings({
   onClose,
 }: ProfileSettingsProps) {
   const [importStatus, setImportStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [syncStatus, setSyncStatus] = useState<{ type: "progress" | "success" | "error"; message: string } | null>(null);
+  const [syncing, setSyncing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleExport = () => {
@@ -46,6 +48,21 @@ export default function ProfileSettings({
     reader.readAsText(file);
     // Reset so the same file can be re-selected
     e.target.value = "";
+  };
+
+  const handleSync = async () => {
+    setSyncing(true);
+    setSyncStatus({ type: "progress", message: "Starting sync..." });
+    const result = await syncToSupabase((p) => {
+      setSyncStatus({ type: "progress", message: p.step });
+    });
+    if (result.success) {
+      setSyncStatus({ type: "success", message: "All data synced to cloud! Reloading..." });
+      setTimeout(() => window.location.reload(), 1500);
+    } else {
+      setSyncStatus({ type: "error", message: result.error ?? "Sync failed" });
+      setSyncing(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -164,6 +181,38 @@ export default function ProfileSettings({
               {importStatus.message}
             </div>
           )}
+
+          {/* Sync to Cloud */}
+          <div className="mt-3 pt-3 border-t border-slate-100">
+            <p className="text-xs text-slate-400 mb-2">
+              Push localStorage data to Supabase for persistent cloud storage
+            </p>
+            <button
+              onClick={handleSync}
+              disabled={syncing}
+              className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
+            >
+              <Cloud className="w-4 h-4" />
+              {syncing ? "Syncing..." : "Sync to Cloud"}
+            </button>
+            {syncStatus && (
+              <div className={`mt-2 flex items-center gap-2 text-xs px-3 py-2 rounded-lg ${
+                syncStatus.type === "success"
+                  ? "bg-emerald-50 text-emerald-700"
+                  : syncStatus.type === "error"
+                  ? "bg-red-50 text-red-600"
+                  : "bg-blue-50 text-blue-700"
+              }`}>
+                {syncStatus.type === "success"
+                  ? <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
+                  : syncStatus.type === "error"
+                  ? <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                  : <Cloud className="w-3.5 h-3.5 flex-shrink-0 animate-pulse" />
+                }
+                {syncStatus.message}
+              </div>
+            )}
+          </div>
         </div>
 
         <button
