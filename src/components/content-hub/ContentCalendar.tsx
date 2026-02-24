@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ContentPost } from "@/types";
+import { ContentPost, PostTarget } from "@/types";
 import {
   format,
   startOfMonth,
@@ -15,7 +15,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Plus,
-  ImageIcon,
 } from "lucide-react";
 
 interface ContentCalendarProps {
@@ -24,11 +23,19 @@ interface ContentCalendarProps {
   onSelectPost: (post: ContentPost) => void;
 }
 
-const STATUS_COLORS = {
-  draft: { bg: "bg-slate-100", border: "border-slate-200", text: "text-slate-600", dot: "bg-slate-400" },
-  scheduled: { bg: "bg-indigo-50", border: "border-indigo-200", text: "text-indigo-700", dot: "bg-indigo-500" },
-  posted: { bg: "bg-emerald-50", border: "border-emerald-200", text: "text-emerald-700", dot: "bg-emerald-500" },
+const HANDLE_SHORT: Record<PostTarget, string> = {
+  linkedin: "in",
+  instagram_meshaid: "@m",
+  instagram_ai360withshaid: "@a",
 };
+
+function getHandleStyle(posted: boolean, status: string) {
+  if (posted)
+    return "bg-emerald-100 text-emerald-700 border-emerald-300";
+  if (status === "scheduled")
+    return "bg-blue-100 text-blue-700 border-blue-300";
+  return "bg-slate-100 text-slate-500 border-slate-300";
+}
 
 export default function ContentCalendar({
   posts,
@@ -42,13 +49,25 @@ export default function ContentCalendar({
   const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
   const startDayOfWeek = getDay(monthStart);
   const today = new Date();
-
-  const getPostsForDate = (date: Date): ContentPost[] => {
-    const dateStr = format(date, "yyyy-MM-dd");
-    return posts.filter((p) => p.scheduledDate === dateStr);
-  };
-
   const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+  const getDataForDate = (date: Date) => {
+    const dateStr = format(date, "yyyy-MM-dd");
+    const dayPosts = posts.filter((p) => p.scheduledDate === dateStr);
+
+    const handles: { target: PostTarget; posted: boolean; status: string }[] = [];
+    dayPosts.forEach((p) => {
+      p.targets.forEach((t) => {
+        handles.push({
+          target: t,
+          posted: (p.postedTargets ?? []).includes(t),
+          status: p.status,
+        });
+      });
+    });
+
+    return { dayPosts, handles, dateStr };
+  };
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5">
@@ -90,40 +109,36 @@ export default function ContentCalendar({
         ))}
 
         {days.map((date) => {
-          const datePosts = getPostsForDate(date);
+          const { dayPosts, handles, dateStr } = getDataForDate(date);
           const isToday = isSameDay(date, today);
-          const dateStr = format(date, "yyyy-MM-dd");
-          const hasPosts = datePosts.length > 0;
+          const hasPosts = dayPosts.length > 0;
 
           return (
             <div key={date.toISOString()} className="aspect-square p-0.5">
               {hasPosts ? (
                 <button
-                  onClick={() =>
-                    datePosts.length === 1
-                      ? onSelectPost(datePosts[0])
-                      : onSelectPost(datePosts[0])
-                  }
+                  onClick={() => onSelectPost(dayPosts[0])}
                   className={`w-full h-full rounded-xl flex flex-col items-center justify-center transition-all hover:scale-105 relative ${
                     isToday ? "ring-2 ring-indigo-400 ring-offset-1" : ""
-                  } ${STATUS_COLORS[datePosts[0].status].bg} ${STATUS_COLORS[datePosts[0].status].border} border`}
+                  } bg-slate-50 hover:bg-slate-100`}
                 >
-                  <span className={`font-bold text-sm ${STATUS_COLORS[datePosts[0].status].text}`}>
+                  <span className="font-bold text-sm text-slate-800">
                     {format(date, "d")}
                   </span>
-                  {/* Post indicators */}
-                  <div className="flex gap-0.5 mt-0.5">
-                    {datePosts.map((p) => (
+                  {/* Per-handle indicators */}
+                  <div className="flex flex-wrap gap-0.5 mt-0.5 justify-center max-w-full px-0.5">
+                    {handles.map((h, i) => (
                       <span
-                        key={p.id}
-                        className={`w-1.5 h-1.5 rounded-full ${STATUS_COLORS[p.status].dot}`}
-                      />
+                        key={`${h.target}-${i}`}
+                        className={`text-[7px] font-bold px-1 py-0 rounded border leading-relaxed ${getHandleStyle(
+                          h.posted,
+                          h.status
+                        )}`}
+                      >
+                        {HANDLE_SHORT[h.target]}
+                      </span>
                     ))}
                   </div>
-                  {/* Image indicator */}
-                  {datePosts.some((p) => p.images.length > 0) && (
-                    <ImageIcon className="w-2.5 h-2.5 text-slate-400 absolute bottom-1 right-1" />
-                  )}
                 </button>
               ) : (
                 <button
@@ -144,18 +159,29 @@ export default function ContentCalendar({
       </div>
 
       {/* Legend */}
-      <div className="flex gap-4 mt-4 pt-4 border-t border-slate-100 justify-center flex-wrap">
+      <div className="flex gap-3 mt-4 pt-4 border-t border-slate-100 justify-center flex-wrap">
         <div className="flex items-center gap-1.5 text-[10px] text-slate-500">
-          <div className="w-2.5 h-2.5 rounded-full bg-slate-400" />
-          Draft
+          <span className="px-1.5 py-0.5 rounded border text-[8px] font-bold bg-emerald-100 text-emerald-700 border-emerald-300">
+            in
+          </span>
+          Posted
         </div>
         <div className="flex items-center gap-1.5 text-[10px] text-slate-500">
-          <div className="w-2.5 h-2.5 rounded-full bg-indigo-500" />
+          <span className="px-1.5 py-0.5 rounded border text-[8px] font-bold bg-blue-100 text-blue-700 border-blue-300">
+            in
+          </span>
           Scheduled
         </div>
         <div className="flex items-center gap-1.5 text-[10px] text-slate-500">
-          <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-          Posted
+          <span className="px-1.5 py-0.5 rounded border text-[8px] font-bold bg-slate-100 text-slate-500 border-slate-300">
+            in
+          </span>
+          Draft
+        </div>
+        <div className="flex items-center gap-1 text-[10px] text-slate-400">
+          <span className="font-bold">in</span>=LinkedIn
+          <span className="font-bold ml-1">@m</span>=@meshaid
+          <span className="font-bold ml-1">@a</span>=@ai360
         </div>
       </div>
     </div>
