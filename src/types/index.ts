@@ -11,6 +11,8 @@ export interface Quote {
   card_template: string;
 }
 
+export type WatermarkPosition = "top-left" | "top-right" | "bottom-left" | "bottom-right" | "center";
+
 export interface UserSettings {
   id: string;
   profile_image_url: string;
@@ -18,6 +20,12 @@ export interface UserSettings {
   linkedin_handle: string;
   instagram_personal_handle: string;
   instagram_ai_handle: string;
+  // Brand Kit
+  brand_colors: string[];
+  brand_font: string;
+  watermark_image_url: string;
+  watermark_position: WatermarkPosition;
+  watermark_opacity: number;
 }
 
 export type FilterType = "all" | "today" | "posted" | "not_posted";
@@ -136,4 +144,63 @@ export interface ContentIdea {
   platform?: Platform;
   convertedToPostId?: string;
   createdAt: string;
+}
+
+// Analytics & Stats
+export interface PostingGap {
+  target: PostTarget;
+  daysSinceLastPost: number | null;
+  lastPostedAt: string | null;
+}
+
+export interface DayActivity {
+  date: string;
+  count: number;
+}
+
+export interface PlatformMonthCount {
+  month: string;
+  linkedin: number;
+  instagram_meshaid: number;
+  instagram_ai360withshaid: number;
+}
+
+export interface ContentMixEntry {
+  type: "quote" | "news" | "custom";
+  count: number;
+  percentage: number;
+}
+
+export interface BestTimeCell {
+  day: number;
+  hour: number;
+  count: number;
+}
+
+export interface MonthlyReportData {
+  month: string;
+  linkedin: number;
+  instagram_meshaid: number;
+  instagram_ai360withshaid: number;
+  quotesPosted: number;
+  newsPosted: number;
+  newsQueued: number;
+}
+
+export interface StatsResult {
+  todayPosts: ContentPost[];
+  overduePosts: ContentPost[];
+  overdueTotalCount: number;
+  postingGaps: PostingGap[];
+  queuedNewsCount: number;
+  postingStreak: number;
+  weeklyActivity: DayActivity[];
+  platformMonthCounts: PlatformMonthCount[];
+  contentMix: ContentMixEntry[];
+  bestTimeCells: BestTimeCell[];
+  bestTimeSummary: string;
+  queueCompletionRate: number;
+  monthlyReport: MonthlyReportData;
+  postsThisWeek: number;
+  quotesPostedCount: number;
 }

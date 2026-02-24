@@ -16,6 +16,11 @@ const defaultSettings: UserSettings = {
   linkedin_handle: "",
   instagram_personal_handle: "meshaid",
   instagram_ai_handle: "ai360withshaid",
+  brand_colors: ["#2563eb", "#10b981"],
+  brand_font: "Inter",
+  watermark_image_url: "",
+  watermark_position: "bottom-right",
+  watermark_opacity: 0.7,
 };
 
 function loadFromStorage(): UserSettings {
@@ -43,6 +48,11 @@ function fromRow(row: any): UserSettings {
     linkedin_handle: row.linkedin_handle ?? "",
     instagram_personal_handle: row.instagram_personal_handle ?? "meshaid",
     instagram_ai_handle: row.instagram_ai_handle ?? "ai360withshaid",
+    brand_colors: row.brand_colors ?? ["#2563eb", "#10b981"],
+    brand_font: row.brand_font ?? "Inter",
+    watermark_image_url: row.watermark_image_url ?? "",
+    watermark_position: row.watermark_position ?? "bottom-right",
+    watermark_opacity: row.watermark_opacity ?? 0.7,
   };
 }
 

@@ -4,11 +4,18 @@ import { useQuotes } from "@/hooks/useQuotes";
 import { useContentPosts } from "@/hooks/useContentPosts";
 import CalendarView from "@/components/calendar/CalendarView";
 import Link from "next/link";
-import { ArrowLeft, CalendarDays, Loader2 } from "lucide-react";
+import { useMemo } from "react";
+import { ArrowLeft, CalendarDays, Loader2, AlertTriangle } from "lucide-react";
 
 export default function CalendarPage() {
   const { allQuotes, loading } = useQuotes();
   const { allPosts } = useContentPosts();
+
+  const today = new Date().toISOString().slice(0, 10);
+  const overduePosts = useMemo(
+    () => allPosts.filter((p) => p.status === "scheduled" && p.scheduledDate && p.scheduledDate < today),
+    [allPosts, today]
+  );
 
   if (loading) {
     return (
@@ -42,6 +49,18 @@ export default function CalendarPage() {
           </div>
         </div>
       </header>
+
+      {/* Overdue Banner */}
+      {overduePosts.length > 0 && (
+        <div className="bg-red-50 border-b border-red-200">
+          <div className="max-w-2xl mx-auto px-4 py-2.5 flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-red-500 flex-shrink-0" />
+            <p className="text-xs font-medium text-red-700">
+              {overduePosts.length} overdue post{overduePosts.length > 1 ? "s" : ""} — scheduled date has passed without being marked as posted
+            </p>
+          </div>
+        </div>
+      )}
 
       <main className="max-w-2xl mx-auto px-4 py-6">
         <CalendarView quotes={allQuotes} posts={allPosts} />

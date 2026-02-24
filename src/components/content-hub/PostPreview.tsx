@@ -22,7 +22,7 @@ import {
   Bookmark,
   Download,
 } from "lucide-react";
-import { downloadImage, downloadAllImages } from "@/lib/imageUtils";
+import { downloadImage, downloadAllImages, downloadImageWithWatermark, downloadAllImagesWithWatermark, WatermarkConfig } from "@/lib/imageUtils";
 
 interface PostPreviewProps {
   post: ContentPost;
@@ -30,6 +30,7 @@ interface PostPreviewProps {
   displayName: string;
   onEdit: () => void;
   onClose: () => void;
+  watermark?: WatermarkConfig;
 }
 
 export default function PostPreview({
@@ -38,6 +39,7 @@ export default function PostPreview({
   displayName,
   onEdit,
   onClose,
+  watermark,
 }: PostPreviewProps) {
   const [expanded, setExpanded] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -48,6 +50,22 @@ export default function PostPreview({
   const previewText = isLong && !expanded
     ? lines.slice(0, 5).join("\n")
     : post.caption;
+
+  const handleDownloadImage = (dataUrl: string, filename: string) => {
+    if (watermark?.watermark_image_url) {
+      downloadImageWithWatermark(dataUrl, watermark, filename);
+    } else {
+      downloadImage(dataUrl, filename);
+    }
+  };
+
+  const handleDownloadAll = () => {
+    if (watermark?.watermark_image_url) {
+      downloadAllImagesWithWatermark(post.images, watermark, "post");
+    } else {
+      downloadAllImages(post.images, "post");
+    }
+  };
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(stripMarkdownBold(post.caption));
@@ -151,7 +169,7 @@ export default function PostPreview({
                       </div>
                     )}
                     <button
-                      onClick={() => downloadImage(post.images[0], `post-image-1.jpg`)}
+                      onClick={() => handleDownloadImage(post.images[0], `post-image-1.jpg`)}
                       className="absolute bottom-3 right-3 p-2 bg-black/60 hover:bg-black/80 text-white rounded-full opacity-100 sm:opacity-0 sm:group-hover/img:opacity-100 transition-opacity"
                       title="Download image"
                     >
@@ -299,7 +317,7 @@ export default function PostPreview({
                           className="w-full max-h-[400px] object-contain"
                         />
                         <button
-                          onClick={() => downloadImage(post.images[0], `post-image-1.jpg`)}
+                          onClick={() => handleDownloadImage(post.images[0], `post-image-1.jpg`)}
                           className="absolute bottom-3 right-3 p-2 bg-black/60 hover:bg-black/80 text-white rounded-full opacity-100 sm:opacity-0 sm:group-hover/img:opacity-100 transition-opacity"
                           title="Download image"
                         >
@@ -316,7 +334,7 @@ export default function PostPreview({
                               className="w-full aspect-square object-contain"
                             />
                             <button
-                              onClick={() => downloadImage(img, `post-image-${i + 1}.jpg`)}
+                              onClick={() => handleDownloadImage(img, `post-image-${i + 1}.jpg`)}
                               className="absolute bottom-2 right-2 p-1.5 bg-black/60 hover:bg-black/80 text-white rounded-full opacity-100 sm:opacity-0 sm:group-hover/img:opacity-100 transition-opacity"
                               title="Download image"
                             >
@@ -334,7 +352,7 @@ export default function PostPreview({
                             className="w-full aspect-square object-contain"
                           />
                           <button
-                            onClick={() => downloadImage(post.images[0], `post-image-1.jpg`)}
+                            onClick={() => handleDownloadImage(post.images[0], `post-image-1.jpg`)}
                             className="absolute bottom-2 right-2 p-1.5 bg-black/60 hover:bg-black/80 text-white rounded-full opacity-100 sm:opacity-0 sm:group-hover/img:opacity-100 transition-opacity"
                             title="Download image"
                           >
@@ -370,7 +388,7 @@ export default function PostPreview({
                               className="w-full aspect-square object-contain"
                             />
                             <button
-                              onClick={() => downloadImage(img, `post-image-${i + 1}.jpg`)}
+                              onClick={() => handleDownloadImage(img, `post-image-${i + 1}.jpg`)}
                               className="absolute bottom-2 right-2 p-1.5 bg-black/60 hover:bg-black/80 text-white rounded-full opacity-100 sm:opacity-0 sm:group-hover/img:opacity-100 transition-opacity"
                               title="Download image"
                             >
@@ -475,7 +493,7 @@ export default function PostPreview({
             </button>
             {post.images.length > 0 && (
               <button
-                onClick={() => downloadAllImages(post.images, "post")}
+                onClick={handleDownloadAll}
                 className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
               >
                 <Download className="w-3.5 h-3.5" />
