@@ -292,10 +292,11 @@ export default function PostPreview({
                 {post.images.length > 0 && (
                   <div className="border-t border-slate-100">
                     {post.images.length === 1 ? (
-                      <div className="relative group/img">
-                        <div
-                          className="w-full aspect-[1.91/1] bg-cover bg-center"
-                          style={{ backgroundImage: `url(${post.images[0]})` }}
+                      <div className="relative group/img bg-slate-50">
+                        <img
+                          src={post.images[0]}
+                          alt="Post image"
+                          className="w-full max-h-[400px] object-contain"
                         />
                         <button
                           onClick={() => downloadImage(post.images[0], `post-image-1.jpg`)}
@@ -308,10 +309,11 @@ export default function PostPreview({
                     ) : post.images.length === 2 ? (
                       <div className="flex gap-0.5">
                         {post.images.map((img, i) => (
-                          <div key={i} className="relative flex-1 group/img">
-                            <div
-                              className="aspect-square bg-cover bg-center"
-                              style={{ backgroundImage: `url(${img})` }}
+                          <div key={i} className="relative flex-1 group/img bg-slate-50">
+                            <img
+                              src={img}
+                              alt={`Post image ${i + 1}`}
+                              className="w-full aspect-square object-contain"
                             />
                             <button
                               onClick={() => downloadImage(img, `post-image-${i + 1}.jpg`)}
@@ -325,10 +327,11 @@ export default function PostPreview({
                       </div>
                     ) : post.images.length === 3 ? (
                       <div className="flex gap-0.5">
-                        <div className="relative flex-1 group/img">
-                          <div
-                            className="aspect-square bg-cover bg-center"
-                            style={{ backgroundImage: `url(${post.images[0]})` }}
+                        <div className="relative flex-1 group/img bg-slate-50">
+                          <img
+                            src={post.images[0]}
+                            alt="Post image 1"
+                            className="w-full aspect-square object-contain"
                           />
                           <button
                             onClick={() => downloadImage(post.images[0], `post-image-1.jpg`)}
@@ -340,10 +343,11 @@ export default function PostPreview({
                         </div>
                         <div className="flex-1 flex flex-col gap-0.5">
                           {post.images.slice(1).map((img, i) => (
-                            <div key={i} className="relative flex-1 group/img">
-                              <div
-                                className="h-full bg-cover bg-center"
-                                style={{ backgroundImage: `url(${img})` }}
+                            <div key={i} className="relative flex-1 group/img bg-slate-50">
+                              <img
+                                src={img}
+                                alt={`Post image ${i + 2}`}
+                                className="w-full h-full object-contain"
                               />
                               <button
                                 onClick={() => downloadImage(img, `post-image-${i + 2}.jpg`)}
@@ -359,10 +363,11 @@ export default function PostPreview({
                     ) : (
                       <div className="grid grid-cols-2 gap-0.5">
                         {post.images.map((img, i) => (
-                          <div key={i} className="relative group/img">
-                            <div
-                              className="aspect-square bg-cover bg-center"
-                              style={{ backgroundImage: `url(${img})` }}
+                          <div key={i} className="relative group/img bg-slate-50">
+                            <img
+                              src={img}
+                              alt={`Post image ${i + 1}`}
+                              className="w-full aspect-square object-contain"
                             />
                             <button
                               onClick={() => downloadImage(img, `post-image-${i + 1}.jpg`)}
