@@ -120,6 +120,7 @@ export interface ContentPost {
   platform?: Platform;
   /** @deprecated use targets instead */
   instagramHandle?: InstagramHandle;
+  postedTargets?: PostTarget[];
   source?: { type: "quote" | "news" | "custom"; title?: string };
   createdAt: string;
   updatedAt: string;

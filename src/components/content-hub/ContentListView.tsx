@@ -1,6 +1,6 @@
 "use client";
 
-import { ContentPost, ContentHubFilter } from "@/types";
+import { ContentPost, ContentHubFilter, PostTarget } from "@/types";
 import PostCard from "./PostCard";
 import {
   Inbox,
@@ -17,7 +17,7 @@ interface ContentListViewProps {
   counts: Record<ContentHubFilter, number>;
   onSelect: (post: ContentPost) => void;
   onEdit: (post: ContentPost) => void;
-  onMarkPosted: (id: string) => void;
+  onMarkTargetPosted: (id: string, target: PostTarget) => void;
   onDelete: (id: string) => void;
 }
 
@@ -39,7 +39,7 @@ export default function ContentListView({
   counts,
   onSelect,
   onEdit,
-  onMarkPosted,
+  onMarkTargetPosted,
   onDelete,
 }: ContentListViewProps) {
   // Sort: scheduled date ascending (nearest first), then newest created
@@ -106,7 +106,7 @@ export default function ContentListView({
               post={post}
               onSelect={onSelect}
               onEdit={onEdit}
-              onMarkPosted={onMarkPosted}
+              onMarkTargetPosted={onMarkTargetPosted}
               onDelete={onDelete}
             />
           ))}

@@ -38,6 +38,7 @@ export default function ContentHubPage() {
     updatePost,
     deletePost,
     updateStatus,
+    markTargetPosted,
     counts,
   } = useContentPosts();
 
@@ -223,7 +224,7 @@ export default function ContentHubPage() {
             counts={counts}
             onSelect={openPreview}
             onEdit={openEditPost}
-            onMarkPosted={(id) => updateStatus(id, "posted")}
+            onMarkTargetPosted={(id, target) => markTargetPosted(id, target)}
             onDelete={deletePost}
           />
         ) : view === "calendar" ? (

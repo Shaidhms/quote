@@ -55,6 +55,7 @@ function fromRow(row: any): ContentPost {
     scheduledDate: row.scheduled_date ?? null,
     status: row.status ?? "draft",
     targets: row.targets ?? ["linkedin"],
+    postedTargets: row.posted_targets ?? [],
     source: row.source ?? undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -70,6 +71,7 @@ function toRow(p: ContentPost) {
     scheduled_date: p.scheduledDate,
     status: p.status,
     targets: p.targets,
+    posted_targets: p.postedTargets ?? [],
     source: p.source ?? null,
     created_at: p.createdAt,
     updated_at: p.updatedAt,
@@ -179,6 +181,7 @@ export function useContentPosts() {
           if (changes.scheduledDate !== undefined) row.scheduled_date = changes.scheduledDate;
           if (changes.status !== undefined) row.status = changes.status;
           if (changes.targets !== undefined) row.targets = changes.targets;
+          if (changes.postedTargets !== undefined) row.posted_targets = changes.postedTargets;
           if (changes.source !== undefined) row.source = changes.source;
           await sb.from("content_posts").update(row).eq("id", id);
         }
@@ -230,6 +233,44 @@ export function useContentPosts() {
     [useSupabase]
   );
 
+  const markTargetPosted = useCallback(
+    async (id: string, target: PostTarget) => {
+      const now = new Date().toISOString();
+
+      let newPostedTargets: PostTarget[] = [];
+      let allPosted = false;
+
+      setPosts((prev) => {
+        const updated = prev.map((p) => {
+          if (p.id !== id) return p;
+          const current = p.postedTargets ?? [];
+          if (current.includes(target)) return p;
+          newPostedTargets = [...current, target];
+          allPosted = p.targets.every((t) => newPostedTargets.includes(t));
+          return {
+            ...p,
+            postedTargets: newPostedTargets,
+            status: allPosted ? ("posted" as ContentPostStatus) : p.status,
+            updatedAt: now,
+          };
+        });
+        if (!useSupabase) saveToStorage(updated);
+        return updated;
+      });
+
+      if (useSupabase) {
+        const sb = getSupabase();
+        if (sb) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const row: any = { posted_targets: newPostedTargets, updated_at: now };
+          if (allPosted) row.status = "posted";
+          await sb.from("content_posts").update(row).eq("id", id);
+        }
+      }
+    },
+    [useSupabase]
+  );
+
   const filteredPosts = posts.filter((p) => {
     if (filter === "all") return true;
     return p.status === filter;
@@ -251,6 +292,7 @@ export function useContentPosts() {
     updatePost,
     deletePost,
     updateStatus,
+    markTargetPosted,
     counts,
   };
 }

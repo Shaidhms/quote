@@ -1,22 +1,24 @@
 "use client";
 
-import { ContentPost, ContentPostStatus } from "@/types";
+import { ContentPost, ContentPostStatus, PostTarget } from "@/types";
 import { format, parseISO } from "date-fns";
 import {
   Pencil,
   CheckCircle2,
+  Circle,
   Trash2,
   CalendarDays,
   ImageIcon,
   FileText,
   FileUp,
+  Sparkles,
 } from "lucide-react";
 
 interface PostCardProps {
   post: ContentPost;
   onSelect: (post: ContentPost) => void;
   onEdit: (post: ContentPost) => void;
-  onMarkPosted: (id: string) => void;
+  onMarkTargetPosted: (id: string, target: PostTarget) => void;
   onDelete: (id: string) => void;
 }
 
@@ -44,18 +46,36 @@ const STATUS_CONFIG: Record<
   },
 };
 
+const TARGET_LABELS: Record<PostTarget, string> = {
+  linkedin: "LinkedIn",
+  instagram_meshaid: "@meshaid",
+  instagram_ai360withshaid: "@ai360withshaid",
+};
+
 export default function PostCard({
   post,
   onSelect,
   onEdit,
-  onMarkPosted,
+  onMarkTargetPosted,
   onDelete,
 }: PostCardProps) {
   const status = STATUS_CONFIG[post.status];
   const pdfCount = post.attachments?.filter((a) => a.type === "pdf").length ?? 0;
+  const postedTargets = post.postedTargets ?? [];
+  const isFullyPosted = post.status === "posted";
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden hover:shadow-md transition-shadow group">
+    <div className="relative bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden hover:shadow-md transition-shadow group">
+      {/* Creative "POSTED" banner overlay */}
+      {isFullyPosted && (
+        <div className="absolute inset-0 z-10 pointer-events-none">
+          <div className="absolute top-3 -right-8 rotate-45 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-[9px] font-bold tracking-widest px-10 py-0.5 shadow-lg">
+            POSTED
+          </div>
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400" />
+        </div>
+      )}
+
       {/* Clickable card body — opens LinkedIn preview */}
       <button
         onClick={() => onSelect(post)}
@@ -97,12 +117,14 @@ export default function PostCard({
                   </span>
                 )}
               </div>
-              <span
-                className={`inline-flex items-center gap-1.5 text-[10px] font-medium px-2 py-0.5 rounded-full ${status.bg} ${status.text}`}
-              >
-                <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`} />
-                {status.label}
-              </span>
+              {!isFullyPosted && (
+                <span
+                  className={`inline-flex items-center gap-1.5 text-[10px] font-medium px-2 py-0.5 rounded-full ${status.bg} ${status.text}`}
+                >
+                  <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`} />
+                  {status.label}
+                </span>
+              )}
               {post.targets?.filter((t) => t.startsWith("instagram")).map((t) => (
                 <span key={t} className="text-[9px] font-medium text-pink-500 bg-pink-50 px-1.5 py-0.5 rounded-full">
                   @{t === "instagram_meshaid" ? "meshaid" : "ai360withshaid"}
@@ -154,27 +176,51 @@ export default function PostCard({
 
       {/* Actions — outside the clickable area */}
       <div className="px-4 pb-4">
-        <div className="flex items-center gap-1.5 pt-1 border-t border-slate-100">
-          <button
-            onClick={() => onEdit(post)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium text-slate-600 hover:bg-slate-50 rounded-lg transition-colors"
-          >
-            <Pencil className="w-3 h-3" /> Edit
-          </button>
-          {post.status !== "posted" && (
-            <button
-              onClick={() => onMarkPosted(post.id)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
-            >
-              <CheckCircle2 className="w-3 h-3" /> Mark Posted
-            </button>
+        <div className="flex flex-col gap-2 pt-2 border-t border-slate-100">
+          {/* Per-platform posted status */}
+          {!isFullyPosted && post.targets.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {post.targets.map((target) => {
+                const done = postedTargets.includes(target);
+                return (
+                  <button
+                    key={target}
+                    onClick={() => !done && onMarkTargetPosted(post.id, target)}
+                    disabled={done}
+                    className={`inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-medium rounded-full transition-all ${
+                      done
+                        ? "bg-emerald-50 text-emerald-600 border border-emerald-200"
+                        : "bg-slate-50 text-slate-500 border border-slate-200 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-200 cursor-pointer"
+                    }`}
+                  >
+                    {done ? (
+                      <CheckCircle2 className="w-3 h-3" />
+                    ) : (
+                      <Circle className="w-3 h-3" />
+                    )}
+                    {TARGET_LABELS[target]}
+                    {done && <Sparkles className="w-2.5 h-2.5" />}
+                  </button>
+                );
+              })}
+            </div>
           )}
-          <button
-            onClick={() => onDelete(post.id)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium text-red-500 hover:bg-red-50 rounded-lg transition-colors ml-auto"
-          >
-            <Trash2 className="w-3 h-3" />
-          </button>
+
+          {/* Edit / Delete row */}
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => onEdit(post)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium text-slate-600 hover:bg-slate-50 rounded-lg transition-colors"
+            >
+              <Pencil className="w-3 h-3" /> Edit
+            </button>
+            <button
+              onClick={() => onDelete(post.id)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium text-red-500 hover:bg-red-50 rounded-lg transition-colors ml-auto"
+            >
+              <Trash2 className="w-3 h-3" />
+            </button>
+          </div>
         </div>
       </div>
     </div>
