@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { createHash } from "crypto";
 import { AINewsArticle, FetchAINewsResponse } from "@/types";
 
 // Multiple RSS sources for diverse AI news, India locale for Google News
@@ -89,7 +90,10 @@ function parseItems(xml: string, fallbackSource: string): AINewsArticle[] {
     // Only include articles from last 2 days
     if (publishedMs < twoDaysAgo) continue;
 
-    const id = Buffer.from(link || title).toString("base64url").slice(0, 20);
+    const id = createHash("sha256")
+      .update(link || title)
+      .digest("base64url")
+      .slice(0, 24);
 
     articles.push({ id, title, description, url: link, source, publishedAt });
   }

@@ -55,10 +55,10 @@ function isIndiaRelated(article: AINewsArticle): boolean {
 
 type RegionFilter = "all" | "india";
 
-const STATUS_DOTS: Record<NewsPostStatus, string> = {
-  queued: "bg-amber-400",
-  posted: "bg-emerald-500",
-  declined: "bg-slate-300",
+const STATUS_BADGES: Record<NewsPostStatus, { bg: string; text: string; label: string }> = {
+  queued: { bg: "bg-amber-50", text: "text-amber-700", label: "Queued" },
+  posted: { bg: "bg-emerald-50", text: "text-emerald-700", label: "Posted" },
+  declined: { bg: "bg-slate-100", text: "text-slate-500", label: "Declined" },
 };
 
 export default function AINewsList({
@@ -200,9 +200,10 @@ export default function AINewsList({
                   </span>
                   {articleStatus && (
                     <span
-                      className={`w-2 h-2 rounded-full ${STATUS_DOTS[articleStatus]}`}
-                      title={articleStatus.charAt(0).toUpperCase() + articleStatus.slice(1)}
-                    />
+                      className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${STATUS_BADGES[articleStatus].bg} ${STATUS_BADGES[articleStatus].text}`}
+                    >
+                      {STATUS_BADGES[articleStatus].label}
+                    </span>
                   )}
                 </div>
                 <span className="text-[10px] text-slate-400 flex-shrink-0">
