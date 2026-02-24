@@ -237,23 +237,21 @@ export function useContentPosts() {
     async (id: string, target: PostTarget) => {
       const now = new Date().toISOString();
 
-      let newPostedTargets: PostTarget[] = [];
-      let allPosted = false;
+      // Compute new state outside setPosts to ensure Supabase gets correct values
+      const post = posts.find((p) => p.id === id);
+      if (!post) return;
+      const current = post.postedTargets ?? [];
+      if (current.includes(target)) return;
+      const newPostedTargets = [...current, target];
+      const allPosted = post.targets.every((t) => newPostedTargets.includes(t));
+      const newStatus = allPosted ? ("posted" as ContentPostStatus) : post.status;
 
       setPosts((prev) => {
-        const updated = prev.map((p) => {
-          if (p.id !== id) return p;
-          const current = p.postedTargets ?? [];
-          if (current.includes(target)) return p;
-          newPostedTargets = [...current, target];
-          allPosted = p.targets.every((t) => newPostedTargets.includes(t));
-          return {
-            ...p,
-            postedTargets: newPostedTargets,
-            status: allPosted ? ("posted" as ContentPostStatus) : p.status,
-            updatedAt: now,
-          };
-        });
+        const updated = prev.map((p) =>
+          p.id === id
+            ? { ...p, postedTargets: newPostedTargets, status: newStatus, updatedAt: now }
+            : p
+        );
         if (!useSupabase) saveToStorage(updated);
         return updated;
       });
@@ -263,12 +261,12 @@ export function useContentPosts() {
         if (sb) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const row: any = { posted_targets: newPostedTargets, updated_at: now };
-          if (allPosted) row.status = "posted";
+          if (allPosted) row.status = newStatus;
           await sb.from("content_posts").update(row).eq("id", id);
         }
       }
     },
-    [useSupabase]
+    [useSupabase, posts]
   );
 
   const filteredPosts = posts.filter((p) => {
