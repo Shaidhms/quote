@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AINewsArticle, NewsPostStatus } from "@/types";
+import { AINewsArticle, NewsPostStatus, NewsVariant } from "@/types";
 import NewsImageGenerator from "./NewsImageGenerator";
 import NewsLinkedInCaption from "./NewsLinkedInCaption";
 import NewsQueueActions from "./NewsQueueActions";
@@ -18,6 +18,7 @@ interface AINewsPostGeneratorProps {
   currentStatus: NewsPostStatus | null;
   onSetStatus: (article: AINewsArticle, status: NewsPostStatus) => void;
   onRemoveDecision: (articleId: string) => void;
+  variant?: NewsVariant;
 }
 
 type Tab = "image" | "caption";
@@ -28,13 +29,14 @@ export default function AINewsPostGenerator({
   currentStatus,
   onSetStatus,
   onRemoveDecision,
+  variant = "ai-news",
 }: AINewsPostGeneratorProps) {
   const [activeTab, setActiveTab] = useState<Tab>("caption");
 
   return (
     <div className="space-y-4">
       {/* Selected article summary card */}
-      <div className="bg-gradient-to-r from-emerald-500 to-teal-600 rounded-2xl p-4 shadow-lg shadow-emerald-500/10">
+      <div className={`bg-gradient-to-r ${variant === "ai-testing" ? "from-violet-500 to-purple-600 shadow-violet-500/10" : "from-emerald-500 to-teal-600 shadow-emerald-500/10"} rounded-2xl p-4 shadow-lg`}>
         <div className="flex items-start gap-3">
           <div className="w-9 h-9 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
             <Newspaper className="w-4 h-4 text-white" />
@@ -100,9 +102,9 @@ export default function AINewsPostGenerator({
 
         <div className="p-4">
           {activeTab === "caption" ? (
-            <NewsLinkedInCaption article={article} displayName={displayName} />
+            <NewsLinkedInCaption article={article} displayName={displayName} variant={variant} />
           ) : (
-            <NewsImageGenerator article={article} displayName={displayName} />
+            <NewsImageGenerator article={article} displayName={displayName} variant={variant} />
           )}
         </div>
       </div>

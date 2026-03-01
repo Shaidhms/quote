@@ -11,7 +11,7 @@ export const maxDuration = 30;
 export async function POST(request: NextRequest) {
   try {
     const body: GenerateNewsCaptionRequest = await request.json();
-    const { article, style, displayName } = body;
+    const { article, style, displayName, variant } = body;
 
     if (!article || !style) {
       return NextResponse.json(
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
 
     const ai = new GoogleGenAI({ apiKey });
 
-    const systemPrompt = generateNewsCaptionSystemPrompt(style);
+    const systemPrompt = generateNewsCaptionSystemPrompt(style, variant);
     const userPrompt = generateNewsCaptionUserPrompt(article, displayName);
 
     const response = await ai.models.generateContent({

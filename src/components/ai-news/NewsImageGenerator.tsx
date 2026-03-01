@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AINewsArticle, ImageStyle } from "@/types";
+import { AINewsArticle, ImageStyle, NewsVariant } from "@/types";
 import { generateNewsImagePrompt } from "@/lib/prompts";
 import {
   Sparkles,
@@ -15,6 +15,7 @@ import {
 interface NewsImageGeneratorProps {
   article: AINewsArticle;
   displayName: string;
+  variant?: NewsVariant;
 }
 
 const IMAGE_STYLES: { value: ImageStyle; label: string; emoji: string }[] = [
@@ -30,13 +31,15 @@ const GEMINI_URL = "https://gemini.google.com/app";
 export default function NewsImageGenerator({
   article,
   displayName,
+  variant = "ai-news",
 }: NewsImageGeneratorProps) {
   const [style, setStyle] = useState<ImageStyle>("cinematic");
   const [prompt, setPrompt] = useState(() =>
     generateNewsImagePrompt(
       article,
       displayName || "a professional person",
-      "cinematic"
+      "cinematic",
+      variant
     )
   );
   const [isEditing, setIsEditing] = useState(false);
@@ -48,7 +51,8 @@ export default function NewsImageGenerator({
       generateNewsImagePrompt(
         article,
         displayName || "a professional person",
-        newStyle
+        newStyle,
+        variant
       )
     );
     setCopied(false);

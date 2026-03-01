@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { AINewsArticle, CaptionStyle } from "@/types";
+import { AINewsArticle, CaptionStyle, NewsVariant } from "@/types";
 import { generateNewsLinkedInCaption } from "@/lib/prompts";
 import { stripMarkdownBold, renderCaptionText } from "@/lib/captionUtils";
 import {
@@ -22,6 +22,7 @@ import {
 interface NewsLinkedInCaptionProps {
   article: AINewsArticle;
   displayName: string;
+  variant?: NewsVariant;
 }
 
 const CAPTION_STYLES: {
@@ -40,10 +41,11 @@ const CAPTION_STYLES: {
 export default function NewsLinkedInCaption({
   article,
   displayName,
+  variant = "ai-news",
 }: NewsLinkedInCaptionProps) {
   const [style, setStyle] = useState<CaptionStyle>("professional");
   const [caption, setCaption] = useState(() =>
-    generateNewsLinkedInCaption(article)
+    generateNewsLinkedInCaption(article, variant)
   );
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState("");
@@ -60,7 +62,7 @@ export default function NewsLinkedInCaption({
         const res = await fetch("/api/generate-news-caption", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ article, style: captionStyle, displayName }),
+          body: JSON.stringify({ article, style: captionStyle, displayName, variant }),
         });
         const data = await res.json();
         if (!res.ok || data.error) {
@@ -74,7 +76,7 @@ export default function NewsLinkedInCaption({
         setLoading(false);
       }
     },
-    [article, displayName]
+    [article, displayName, variant]
   );
 
   const handleStyleChange = (newStyle: CaptionStyle) => {
@@ -83,7 +85,7 @@ export default function NewsLinkedInCaption({
     setIsEditing(false);
 
     if (newStyle === "professional") {
-      setCaption(generateNewsLinkedInCaption(article));
+      setCaption(generateNewsLinkedInCaption(article, variant));
     } else {
       generateAICaption(newStyle);
     }
@@ -109,7 +111,7 @@ export default function NewsLinkedInCaption({
 
   const handleRegenerate = () => {
     if (style === "professional") {
-      setCaption(generateNewsLinkedInCaption(article));
+      setCaption(generateNewsLinkedInCaption(article, variant));
     } else {
       generateAICaption(style);
     }

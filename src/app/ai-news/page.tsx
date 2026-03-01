@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAINews } from "@/hooks/useAINews";
 import { useUserSettings } from "@/hooks/useUserSettings";
 import { useNewsQueue } from "@/hooks/useNewsQueue";
@@ -16,11 +16,61 @@ import {
   Zap,
   Sparkles,
   ListChecks,
+  FlaskConical,
 } from "lucide-react";
+import { AINewsArticle, FetchAINewsResponse } from "@/types";
 
 type View = "feed" | "queue";
+type Topic = "ai-news" | "ai-testing";
+
+function useTestingNews() {
+  const [articles, setArticles] = useState<AINewsArticle[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [fetchedAt, setFetchedAt] = useState<string | null>(null);
+  const [selectedArticle, setSelectedArticle] =
+    useState<AINewsArticle | null>(null);
+
+  const fetchNews = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/fetch-testing-news");
+      const data: FetchAINewsResponse = await res.json();
+      if (!res.ok || data.error) {
+        setError(data.error || "Failed to load testing news");
+      } else {
+        setArticles(data.articles);
+        setFetchedAt(data.fetchedAt);
+      }
+    } catch {
+      setError("Network error. Please check your connection.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return {
+    articles,
+    loading,
+    error,
+    fetchedAt,
+    selectedArticle,
+    setSelectedArticle,
+    fetchNews,
+  };
+}
 
 export default function AINewsPage() {
+  const aiNews = useAINews();
+  const testingNews = useTestingNews();
+
+  const { settings } = useUserSettings();
+  const newsQueue = useNewsQueue();
+  const [view, setView] = useState<View>("feed");
+  const [topic, setTopic] = useState<Topic>("ai-news");
+
+  const activeSource = topic === "ai-news" ? aiNews : testingNews;
   const {
     articles,
     loading,
@@ -29,15 +79,22 @@ export default function AINewsPage() {
     selectedArticle,
     setSelectedArticle,
     fetchNews,
-  } = useAINews();
-
-  const { settings } = useUserSettings();
-  const newsQueue = useNewsQueue();
-  const [view, setView] = useState<View>("feed");
+  } = activeSource;
 
   useEffect(() => {
-    fetchNews();
-  }, [fetchNews]);
+    aiNews.fetchNews();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Fetch testing news on first switch to that topic
+  const [testingFetched, setTestingFetched] = useState(false);
+  useEffect(() => {
+    if (topic === "ai-testing" && !testingFetched) {
+      testingNews.fetchNews();
+      setTestingFetched(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [topic]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-emerald-50/30">
@@ -60,20 +117,49 @@ export default function AINewsPage() {
               </div>
               <div>
                 <h1 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                  AI News Hub
-                  <span className="text-[10px] bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-2 py-0.5 rounded-full font-medium">
+                  {topic === "ai-news" ? "AI News Hub" : "AI in Testing"}
+                  <span className={`text-[10px] bg-gradient-to-r ${topic === "ai-news" ? "from-emerald-500 to-teal-500" : "from-violet-500 to-purple-500"} text-white px-2 py-0.5 rounded-full font-medium`}>
                     LIVE
                   </span>
                 </h1>
                 <p className="text-xs text-slate-500">
-                  Latest AI news from India & worldwide
+                  {topic === "ai-news"
+                    ? "Latest AI news from India & worldwide"
+                    : "AI in QA, Testing & Performance Engineering"}
                 </p>
               </div>
             </div>
           </div>
 
-          {/* View toggle + Refresh */}
+          {/* Topic + View toggle + Refresh */}
           <div className="flex items-center gap-2">
+            {/* Topic tabs */}
+            <div className="flex bg-slate-100 rounded-xl p-0.5">
+              <button
+                onClick={() => setTopic("ai-news")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                  topic === "ai-news"
+                    ? "bg-white text-emerald-700 shadow-sm"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                <Newspaper className="w-3.5 h-3.5" />
+                AI News
+              </button>
+              <button
+                onClick={() => setTopic("ai-testing")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                  topic === "ai-testing"
+                    ? "bg-white text-violet-700 shadow-sm"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                <FlaskConical className="w-3.5 h-3.5" />
+                AI in Testing
+              </button>
+            </div>
+
+            {/* View toggle */}
             <div className="flex bg-slate-100 rounded-xl p-0.5">
               <button
                 onClick={() => setView("feed")}
@@ -151,10 +237,14 @@ export default function AINewsPage() {
             </div>
             <div className="text-center">
               <p className="text-sm font-medium text-slate-700">
-                Fetching latest AI news...
+                {topic === "ai-news"
+                  ? "Fetching latest AI news..."
+                  : "Fetching AI in Testing news..."}
               </p>
               <p className="text-xs text-slate-400 mt-1">
-                Scanning multiple sources worldwide
+                {topic === "ai-news"
+                  ? "Scanning multiple sources worldwide"
+                  : "Scanning testing & QA sources"}
               </p>
             </div>
           </div>
@@ -177,12 +267,13 @@ export default function AINewsPage() {
             <div className="lg:col-span-3 lg:sticky lg:top-20 lg:self-start">
               {selectedArticle ? (
                 <AINewsPostGenerator
-                  key={selectedArticle.id}
+                  key={`${topic}-${selectedArticle.id}`}
                   article={selectedArticle}
                   displayName={settings.display_name}
                   currentStatus={newsQueue.getStatus(selectedArticle.id)}
                   onSetStatus={newsQueue.setArticleStatus}
                   onRemoveDecision={newsQueue.removeDecision}
+                  variant={topic}
                 />
               ) : (
                 <div className="flex flex-col items-center justify-center h-80 bg-white/60 backdrop-blur-sm rounded-2xl border border-dashed border-slate-200 text-slate-400 gap-4">

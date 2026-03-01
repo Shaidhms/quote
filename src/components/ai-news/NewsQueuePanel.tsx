@@ -32,6 +32,7 @@ const SOURCE_COLORS: Record<string, { bg: string; text: string }> = {
   TechCrunch: { bg: "bg-green-50", text: "text-green-700" },
   "The Verge": { bg: "bg-purple-50", text: "text-purple-700" },
   "Ars Technica": { bg: "bg-orange-50", text: "text-orange-700" },
+  "Ministry of Testing": { bg: "bg-rose-50", text: "text-rose-700" },
 };
 
 const STATUS_CONFIG: Record<

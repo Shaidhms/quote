@@ -29,6 +29,7 @@ const SOURCE_COLORS: Record<string, { bg: string; text: string; dot: string }> =
   TechCrunch: { bg: "bg-green-50", text: "text-green-700", dot: "bg-green-500" },
   "The Verge": { bg: "bg-purple-50", text: "text-purple-700", dot: "bg-purple-500" },
   "Ars Technica": { bg: "bg-orange-50", text: "text-orange-700", dot: "bg-orange-500" },
+  "Ministry of Testing": { bg: "bg-rose-50", text: "text-rose-700", dot: "bg-rose-500" },
 };
 
 function getSourceStyle(source: string) {

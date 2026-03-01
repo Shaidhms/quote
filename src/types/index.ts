@@ -84,10 +84,13 @@ export interface FetchAINewsResponse {
   error?: string;
 }
 
+export type NewsVariant = "ai-news" | "ai-testing";
+
 export interface GenerateNewsCaptionRequest {
   article: AINewsArticle;
   style: CaptionStyle;
   displayName: string;
+  variant?: NewsVariant;
 }
 
 // News Post Queue
