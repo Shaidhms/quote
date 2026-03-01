@@ -2,26 +2,28 @@ import { NextResponse } from "next/server";
 import { createHash } from "crypto";
 import { AINewsArticle, FetchAINewsResponse } from "@/types";
 
-// RSS feeds focused on software test automation, QA tools, performance engineering
+// Google News queries use multi-word quoted phrases to avoid ambiguity.
+// Single-word tool names like "Selenium" or "Playwright" are NOT used alone
+// because they match chemistry / theater results.
 const RSS_FEEDS = [
-  // Specific tool names + AI to get highly relevant results
+  // AI + software testing (highly specific phrases only)
   {
-    url: "https://news.google.com/rss/search?q=%22Selenium%22+OR+%22Playwright%22+OR+%22Cypress+testing%22+OR+%22JMeter%22+OR+%22LoadRunner%22+OR+%22Gatling%22+OR+%22k6+testing%22+when:14d&hl=en&gl=US&ceid=US:en",
+    url: "https://news.google.com/rss/search?q=%22test+automation%22+OR+%22software+testing%22+OR+%22QA+automation%22+OR+%22quality+assurance+software%22+when:14d&hl=en&gl=US&ceid=US:en",
     fallbackSource: "Google News",
   },
-  // AI + software testing specific phrases
+  // Performance & load testing tools (with disambiguating context)
   {
-    url: "https://news.google.com/rss/search?q=%22AI+test+automation%22+OR+%22AI+software+testing%22+OR+%22AI+QA+engineer%22+OR+%22copilot+testing%22+OR+%22AI+code+review%22+OR+%22AI+bug+detection%22+when:14d&hl=en&gl=US&ceid=US:en",
+    url: "https://news.google.com/rss/search?q=%22JMeter+performance%22+OR+%22LoadRunner+testing%22+OR+%22Gatling+load+test%22+OR+%22performance+testing+tool%22+OR+%22load+testing+tool%22+when:14d&hl=en&gl=US&ceid=US:en",
     fallbackSource: "Google News",
   },
-  // QA platforms and test frameworks
+  // AI-specific testing news
   {
-    url: "https://news.google.com/rss/search?q=%22test+automation+framework%22+OR+%22SDET%22+OR+%22performance+engineering%22+OR+%22shift+left+testing%22+OR+%22CI+CD+testing%22+OR+%22Appium%22+OR+%22TestNG%22+when:14d&hl=en&gl=US&ceid=US:en",
+    url: "https://news.google.com/rss/search?q=%22AI+test+automation%22+OR+%22AI+software+testing%22+OR+%22AI+QA%22+OR+%22AI+bug+detection%22+OR+%22AI+code+review%22+OR+%22copilot+testing%22+when:14d&hl=en&gl=US&ceid=US:en",
     fallbackSource: "Google News",
   },
-  // Load/perf testing specific
+  // Test frameworks with disambiguating words
   {
-    url: "https://news.google.com/rss/search?q=%22load+testing+tool%22+OR+%22performance+testing+tool%22+OR+%22API+testing%22+OR+%22Postman%22+OR+%22software+quality%22+AI+when:14d&hl=en&gl=US&ceid=US:en",
+    url: "https://news.google.com/rss/search?q=%22Selenium+WebDriver%22+OR+%22Playwright+testing%22+OR+%22Cypress+automation%22+OR+%22Appium+mobile+testing%22+OR+%22SDET%22+OR+%22shift+left+testing%22+when:14d&hl=en&gl=US&ceid=US:en",
     fallbackSource: "Google News",
   },
   {
@@ -52,33 +54,49 @@ function stripHtml(html: string): string {
     .trim();
 }
 
-// Software testing tool names and specific terms (high confidence)
-const TOOL_KEYWORDS =
-  /\bselenium\b|\bcypress\b|\bplaywright\b|\bjmeter\b|\bloadrunner\b|\bload runner\b|\bgatling\b|\bk6\b|\bappium\b|\btestng\b|\bjunit\b|\bpytest\b|\brobot framework\b|\bcucumber\b|\bpostman\b|\bsonarqube\b|\btricentis\b|\bsauce labs\b|\bbrowserstack\b|\blambdatest\b|\bmabl\b|\btestim\b|\bapplitool/i;
+// ---- Relevance filtering ----
 
-// Software testing concepts (must appear with software/code/dev context)
-const TESTING_CONCEPTS =
-  /\btest automation\b|\bQA engineer\b|\bQA automation\b|\bSDET\b|\bshift.left\b|\bCI.CD\b|\bunit test\b|\be2e test\b|\bend.to.end test\b|\bregression test\b|\bload test\b|\bperformance test\b|\bstress test\b|\bAPI test\b|\bintegration test\b|\btest framework\b|\btest suite\b|\btest case\b|\btest coverage\b|\bbug detect\b|\bcode review\b|\btest generat\b|\bsoftware test\b|\bsoftware quality\b|\bquality assurance\b|\bperformance engineer/i;
+// These multi-word phrases are unambiguous (no false positives)
+const SAFE_KEYWORDS =
+  /\btest automation\b|\bautomated testing\b|\bQA engineer\b|\bQA automation\b|\bSDET\b|\bshift.left\b|\bunit test(s|ing)?\b|\be2e test(s|ing)?\b|\bend.to.end test\b|\bregression test(s|ing)?\b|\bload test(s|ing)?\b|\bperformance test(s|ing)?\b|\bstress test(s|ing)?\b|\bAPI test(s|ing)?\b|\bintegration test(s|ing)?\b|\btest framework\b|\btest suite\b|\btest coverage\b|\btest case(s)?\b|\bsoftware test(s|ing)?\b|\bsoftware quality\b|\btest generat\b|\bbug detect\b|\btest execut\b|\btest orchestrat\b|\btest pipeline\b|\bCI.CD test\b|\btest driven\b|\bbehavior driven\b|\btest infrastructure\b|\bquality engineering\b|\bperformance engineering\b/i;
 
-// Exclude non-software testing (medical, clinical, drug, etc.)
+// Tool names that are ambiguous on their own — require a software context word nearby
+const AMBIGUOUS_TOOLS =
+  /\bselenium\b|\bplaywright\b|\bcypress\b|\bpostman\b|\bgatling\b|\bcucumber\b/i;
+
+const SOFTWARE_CONTEXT =
+  /\btest(s|ing|er)?\b|\bautomation\b|\bQA\b|\bbrowser\b|\bwebdriver\b|\bCI.CD\b|\bframework\b|\bdevops\b|\bsoftware\b|\bAPI\b|\bweb\b|\bmobile\b|\bcode\b|\bbug\b|\bregression\b|\bpipeline\b|\bopen.source\b|\bnpm\b|\bgithub\b|\bselenium\b|\bscript\b|\brelease\b/i;
+
+// Tool names that are unambiguous (multi-word or unique to testing)
+const UNIQUE_TOOLS =
+  /\bselenium webdriver\b|\bplaywright test\b|\bcypress\.io\b|\bcypress automation\b|\bjmeter\b|\bloadrunner\b|\bload runner\b|\bappium\b|\btestng\b|\bjunit\b|\bpytest\b|\brobot framework\b|\bsonarqube\b|\btricentis\b|\bsauce labs\b|\bbrowserstack\b|\blambdatest\b|\bmabl\b|\btestim\b|\bapplitool\b|\bk6 load\b|\bk6 test\b|\btestcomplete\b|\bkatalon\b|\branorex\b|\bqtest\b|\bzephyr\b|\bxray test\b/i;
+
+// Hard exclude: topics that are definitely NOT software testing
 const EXCLUDE_KEYWORDS =
-  /\bclinical trial\b|\bdrug test\b|\bmedical test\b|\bblood test\b|\bcovid test\b|\bvaccine\b|\bpatient\b|\bFDA\b|\bdiagnos\b|\bcrash test\b|\bemission test\b|\bnuclear test\b|\bmissile test\b|\bweapon test\b|\bdoping\b|\bantidoping\b/i;
+  /\bclinical trial\b|\bdrug test\b|\bmedical test\b|\bblood test\b|\bcovid test\b|\bvaccine\b|\bpatient\b|\bFDA\b|\bdiagnos\b|\bcrash test\b|\bemission test\b|\bnuclear test\b|\bmissile test\b|\bweapon test\b|\bdoping\b|\bantidoping\b|\bplaywright.*award\b|\bplaywright.*theater\b|\bplaywright.*theatre\b|\bplaywright.*play\b|\bplaywright.*drama\b|\bplaywright.*stage\b|\bplaywright.*broadway\b|\btheater\b|\btheatre\b|\bbroadway\b|\bmusical\b|\bopera\b|\bfilm festival\b|\bscreenwriter\b|\bscreenplay\b|\bnovelist\b|\bpoet\b|\bsupplement\b|\bnutrient\b|\bmineral\b|\bdietary\b/i;
 
 function isTestingRelated(title: string, description: string): boolean {
   const text = `${title} ${description}`;
-  // Exclude medical/military/automotive testing
+
+  // Hard exclude non-software content
   if (EXCLUDE_KEYWORDS.test(text)) return false;
-  // Include if mentions specific tools
-  if (TOOL_KEYWORDS.test(text)) return true;
-  // Include if mentions software testing concepts
-  if (TESTING_CONCEPTS.test(text)) return true;
+
+  // Unambiguous software testing phrases — always accept
+  if (SAFE_KEYWORDS.test(text)) return true;
+
+  // Unambiguous tool names — always accept
+  if (UNIQUE_TOOLS.test(text)) return true;
+
+  // Ambiguous tool names — only accept if software context word is also present
+  if (AMBIGUOUS_TOOLS.test(text) && SOFTWARE_CONTEXT.test(text)) return true;
+
   return false;
 }
 
 function parseItems(xml: string, fallbackSource: string): AINewsArticle[] {
   const itemRegex = /<item>([\s\S]*?)<\/item>|<entry>([\s\S]*?)<\/entry>/g;
   const articles: AINewsArticle[] = [];
-  const sevenDaysAgo = Date.now() - 14 * 24 * 60 * 60 * 1000;
+  const fourteenDaysAgo = Date.now() - 14 * 24 * 60 * 60 * 1000;
 
   let match;
   while ((match = itemRegex.exec(xml)) !== null) {
@@ -118,8 +136,8 @@ function parseItems(xml: string, fallbackSource: string): AINewsArticle[] {
       : new Date().toISOString();
     const publishedMs = new Date(publishedAt).getTime();
 
-    // Only include articles from last 14 days (wider window for niche topic)
-    if (publishedMs < sevenDaysAgo) continue;
+    // Only include articles from last 14 days
+    if (publishedMs < fourteenDaysAgo) continue;
 
     // Filter ALL sources for software testing relevance
     if (!isTestingRelated(title, description)) {
